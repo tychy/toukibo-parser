@@ -23,11 +23,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	name, err := h.GetHoujinRepresentativeName()
+	names, err := h.GetHoujinRepresentativeNames()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("代表", name)
+	fmt.Println("代表:", names)
 	return
 }
 

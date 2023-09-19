@@ -1,5 +1,6 @@
 URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
 OUTPUT_DIR=sample
+NUM_SAMPLE=778
 
 build:
 	mkdir -p bin
@@ -8,8 +9,8 @@ build:
 run: build
 	./bin/toukibo-parser -path=$(TARGET)
 
-run-sample: build
-	./bin/toukibo-parser -path=$(TARGET)
+run-all-sample: build
+	./run-all-sample.sh
 
 get-sample: 
 	mkdir -p $(OUTPUT_DIR)
@@ -18,7 +19,7 @@ get-sample:
 	done
 	wait
 	sleep 5
-	@for i in {500..778}; do \
+	@for i in {500..$(NUM_SAMPLE)}; do \
 		curl -s -o "$(OUTPUT_DIR)/sample$$i.pdf" "$(URL)/remote-sample$$i.pdf" & \
 	done
 	wait

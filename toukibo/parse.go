@@ -66,12 +66,16 @@ type Houjin struct {
 	body   *HoujinBody
 }
 
-func (h *Houjin) GetHoujinRepresentativeName() (string, error) {
-	r, err := h.body.GetHoujinRepresentative()
+func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
+	r, err := h.body.GetHoujinRepresentatives()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return r.Name, nil
+	names := make([]string, len(r))
+	for i, v := range r {
+		names[i] = v.Name
+	}
+	return names, nil
 }
 
 func Parse(input string) (*Houjin, error) {
