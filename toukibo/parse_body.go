@@ -86,7 +86,7 @@ func (h *HoujinBody) String() string {
 		h.HoujinCapital,
 		h.HoujinToukiRecord,
 	)
-	fmt.Println("役員   : ")
+	out += "役員  : \n"
 	for _, e := range h.HoujinExecutive {
 		out += "[" + e.String() + "],\n"
 	}
@@ -388,7 +388,7 @@ func (h *HoujinBody) ConsumeHoujinAddress(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinKoukoku(s string) bool {
-	pattern := `(公告をする方法|公告の方法)　*│　*(.+)┃`
+	pattern := `(公告をする方法|公告の方法|法人の公告方法)　*│　*(.+)┃`
 	regex := regexp.MustCompile(pattern)
 
 	matches := regex.FindStringSubmatch(s)
