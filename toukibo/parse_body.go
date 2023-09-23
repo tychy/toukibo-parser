@@ -368,7 +368,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 func (h *HoujinBody) ConsumeHoujinNumber(s string) bool {
 	// 正規表現パターン: 全角数字で構成された法人番号
-	pattern := "([０-９]{1,4}－[０-９]{1,2}－[０-９]{1,6})"
+	pattern := "([０-９]{4}－[０-９]{2}－[０-９]{6})"
 	regex := regexp.MustCompile(pattern)
 
 	matches := regex.FindStringSubmatch(s)
@@ -440,8 +440,10 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 	}
 
 	if h.ConsumeHoujinNumber(s) {
+		fmt.Println("here")
 		return nil
 	}
+
 	if h.ConsumeHoujinName(s) {
 		v, err := GetHoujinValue(s)
 		if err != nil {
@@ -451,6 +453,7 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		h.HoujinName = v
 		return nil
 	}
+
 	if h.ConsumeHoujinAddress(s) {
 		v, err := GetHoujinValue(s)
 		if err != nil {
@@ -459,7 +462,6 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		h.HoujinAddress = v
 		return nil
 	}
-
 	if h.ConsumeHoujinKoukoku(s) {
 		return nil
 	}
