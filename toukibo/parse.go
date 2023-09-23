@@ -16,6 +16,7 @@ const (
 	separator5   = "┠────────┼───────────────────────┴─────────────┨"
 	separator6   = "┠────────┼───────────────────────┬─────────────┨"
 	separator7   = "┠────────┼───────────────────────┼─────────────┨"
+	separator8   = "┣━━━━━━━━┿━━━━━━━━━━━━━━━━━━━━━━━┿━━━━━━━━━━━━━┫"
 )
 
 func findBeginContent(content string) (int, error) {
@@ -54,7 +55,7 @@ func DivideToukiboContent(input string) (string, []string, error) {
 		return "", nil, err
 	}
 
-	separatorPattern := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s", separator1, separator2, separator3, separator4, separator5, separator6, separator7)
+	separatorPattern := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s", separator1, separator2, separator3, separator4, separator5, separator6, separator7, separator8)
 	re := regexp.MustCompile(separatorPattern)
 
 	parts := re.Split(content, -1)
@@ -104,6 +105,8 @@ func normalize_kanji(input string) string {
 			sb.WriteRune('藤')
 		case 59470:
 			sb.WriteRune('吉')
+		case 60100:
+			sb.WriteRune('蛸')
 		default:
 			sb.WriteRune(r)
 		}
