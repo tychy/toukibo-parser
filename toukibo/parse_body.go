@@ -440,7 +440,6 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 	}
 
 	if h.ConsumeHoujinNumber(s) {
-		fmt.Println("here")
 		return nil
 	}
 
