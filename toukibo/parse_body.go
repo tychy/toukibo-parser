@@ -167,7 +167,17 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	if len(res) > 0 {
 		return res, nil
 	}
-
+	// 清算人が代表となる場合
+	for _, e := range h.HoujinExecutive {
+		for _, v := range e {
+			if (v.Pisition == "清算人") && v.IsValid {
+				res = append(res, v)
+			}
+		}
+	}
+	if len(res) > 0 {
+		return res, nil
+	}
 	// 監査役が代表となる場合
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
@@ -434,7 +444,7 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		strings.Contains(s, "取締役等の会社") || strings.Contains(s, "非業務執行取締役") ||
 		strings.Contains(s, "取締役会設置会社") || strings.Contains(s, "監査役設置会社") || strings.Contains(s, "会計監査人設置会") ||
 		strings.Contains(s, "地区") || strings.Contains(s, "解散の事由") || strings.Contains(s, "監査役会設置会社") || strings.Contains(s, "資産の総額") ||
-		strings.Contains(s, "地　区") || strings.Contains(s, "解　散") {
+		strings.Contains(s, "地　区") || strings.Contains(s, "解　散") || strings.Contains(s, "支　店") || strings.Contains(s, "従たる事務所") {
 		// skip
 		return nil
 	}
