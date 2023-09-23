@@ -11,7 +11,7 @@ const (
 	ZenkakuColon         = '：'
 	ZenkakuSlash         = '／'
 	ZenkakuHyphen        = '－'
-	ZenkakuStringPattern = `\p{Han}\p{Hiragana}\p{Katakana}Ａ-Ｚａ-ｚ０-９A-Za-z0-9＆’，‐．・ー\s　。－、`
+	ZenkakuStringPattern = `\p{Han}\p{Hiragana}\p{Katakana}Ａ-Ｚａ-ｚ０-９A-Za-z0-9＆’，‐．・ー\s　。－、：／`
 )
 
 func zenkakuToHankaku(s string) string {
