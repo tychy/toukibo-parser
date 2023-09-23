@@ -78,8 +78,42 @@ func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
 	return names, nil
 }
 
+func normalize_kanji(input string) string {
+	var sb strings.Builder
+	for _, r := range input {
+		switch r {
+		case 57451:
+			sb.WriteRune('塚')
+		case 57735:
+			sb.WriteRune('西')
+		case 60887:
+			sb.WriteRune('逢')
+		case 57788:
+			sb.WriteRune('花')
+		case 60906:
+			sb.WriteRune('辻')
+		case 57374:
+			sb.WriteRune('土')
+		case 60849:
+			sb.WriteRune('樋')
+		case 58450:
+			sb.WriteRune('廣')
+		case 57860:
+			sb.WriteRune('若')
+		case 59648:
+			sb.WriteRune('藤')
+		case 59470:
+			sb.WriteRune('吉')
+		default:
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
+
 func Parse(input string) (*Houjin, error) {
-	header, body, err := DivideToukiboContent(input)
+	s := normalize_kanji(input)
+	header, body, err := DivideToukiboContent(s)
 	if err != nil {
 		return nil, err
 	}

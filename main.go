@@ -14,7 +14,6 @@ func main() {
 	flag.Parse()
 	path := fmt.Sprintf("sample/%s.pdf", *f)
 	content, err := readPdf(path)
-
 	if err != nil {
 		panic(err)
 	}
