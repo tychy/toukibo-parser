@@ -189,6 +189,17 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	if len(res) > 0 {
 		return res, nil
 	}
+	// 社員が代表となる場合
+	for _, e := range h.HoujinExecutive {
+		for _, v := range e {
+			if (v.Pisition == "社員") && v.IsValid {
+				res = append(res, v)
+			}
+		}
+	}
+	if len(res) > 0 {
+		return res, nil
+	}
 	return []HoujinExecutiveValue{}, fmt.Errorf("not found representative")
 }
 
@@ -317,6 +328,17 @@ func trimAllSpace(s string) string {
 	return strings.ReplaceAll(s, "　", "")
 }
 
+func getShain(s string) (string, string, string) {
+	pattern := fmt.Sprintf("┃　*│　*社員　*([%s]+)", ZenkakuStringPattern)
+	regex := regexp.MustCompile(pattern)
+	matches := regex.FindStringSubmatch(s)
+	if len(matches) > 0 {
+		s = regex.ReplaceAllString(s, "┃　　　　　　　　")
+		return s, "社員", trimAllSpace(matches[1])
+	}
+	return s, "", ""
+}
+
 func getExecutiveNameAndPosition(s string) (string, string, string) {
 	positions := "代表取締役|取締役|監査役|会計監査人|代表理事|理事|監事|代表社員|業務執行社員|会長|清算人|代表役員|会計参与|無限責任社員|有限責任社員|破産管財人|評議員|代表者|会頭"
 	pattern := fmt.Sprintf("(%s)　*([%s]+)", positions, ZenkakuStringPattern)
@@ -325,6 +347,12 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 	if len(matches) > 0 {
 		return trimPattern(s, pattern), trimAllSpace(matches[1]), trimAllSpace(matches[2])
 	}
+
+	s, pos, name := getShain(s)
+	if pos != "" {
+		return s, pos, name
+	}
+
 	return s, "", ""
 }
 
@@ -334,6 +362,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	for i, s := range parts {
 		isLast := i == len(parts)-1
 
+		fmt.Println(s)
 		s, position, name := getExecutiveNameAndPosition(s)
 		if position == "" || name == "" {
 			if strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") || strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任") {
@@ -349,7 +378,10 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			}
 			return nil, fmt.Errorf("failed to get executive name and position from %s", s)
 		}
+		fmt.Println("here")
+		fmt.Println(s)
 		s = mergeLines(s)
+		fmt.Println(s)
 
 		value, err := getValue(s)
 		if err != nil {
