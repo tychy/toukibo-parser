@@ -9,6 +9,9 @@ build:
 run: build
 	./bin/toukibo-parser -path=$(TARGET)
 
+run-sample: build
+	./bin/toukibo-parser -path="sample/$(TARGET).pdf"
+	
 run-all-sample: build
 	./run-all-sample.sh
 # ちょっとおかしいもの

@@ -12,7 +12,7 @@ import (
 func main() {
 	f := flag.String("path", "sample1", "")
 	flag.Parse()
-	path := fmt.Sprintf("sample/%s.pdf", *f)
+	path := fmt.Sprint(*f)
 	content, err := readPdf(path)
 	if err != nil {
 		panic(err)

@@ -1,9 +1,9 @@
 # toukibo_parser
 商業登記簿パーサー
 
-## 動作確認
+## 動作イメージ
 ```
- % make run TARGET=sample2
+ % make run TARGET=sample/sample2.pdf
 go run main.go -path=sample2
 Header
 PDF作成日時: 2021-03-29 17:58:00 +0000 UTC
@@ -20,7 +20,13 @@ Body
 登記記録 : {value: 平成元年法務省令第１５号附則第３項の規定により, isValid: true, registerAt: 平成**年**月**日},
 役員   : [{name: ****, position: 取締役, address: , isValid: true, registerAt: 平成**年**月**日, resignedAt: },],
 [{name: ****, position: 代表取締役, address: ****, isValid: false, registerAt: 平成**年**月**日, resignedAt: },{name: ****, position: 代表取締役, address: ****, isValid: true, registerAt: 平成**年**月**日, resignedAt: },],
+```
 
+## テストを実行する場合
+```
+% make get-sample
+% make run-all-sample
+// 現状テストの、形にはなっておらず、panicしなければOK
 ```
 
 ## ライセンス
