@@ -370,7 +370,8 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 		s, position, name := getExecutiveNameAndPosition(s)
 		if position == "" || name == "" {
-			if strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") || strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任") {
+			if strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") ||
+				strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任") {
 				if !isLast || i == 0 {
 					return nil, fmt.Errorf("resign is not the last %s", s)
 				}
