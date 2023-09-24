@@ -1,7 +1,7 @@
 #!/bin/bash
 NUM_SAMPLE=778
 
-SKIP_SAMPLES=(251 481 674 690 711 770)
+SKIP_SAMPLES=(674)
 
 # スクリプト全体でエラーが発生したら停止する
 set -e

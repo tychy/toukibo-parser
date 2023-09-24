@@ -13,6 +13,7 @@ run-all-sample: build
 	./run-all-sample.sh
 # ちょっとおかしいもの
 # 133 住所が途中で切れている
+# 770 住所のパースがおかしい
 
 get-sample: 
 	mkdir -p $(OUTPUT_DIR)

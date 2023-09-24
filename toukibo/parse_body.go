@@ -71,18 +71,20 @@ type HoujinBody struct {
 	HoujinAddress     HoujinValueArray
 	HoujinKoukoku     string
 	HoujinCreatedAt   string
+	HoujinDissolvedAt string
 	HoujinCapital     HoujinValueArray
 	HoujinToukiRecord HoujinValueArray
 	HoujinExecutive   []HoujinExecutiveValueArray
 }
 
 func (h *HoujinBody) String() string {
-	out := fmt.Sprintf("Body\n法人番号 : %s\n法人名  : %s\n法人住所 : %s\n公告   : %s\n成立年月日: %s\n資本金  : %s\n登記記録 : %s\n",
+	out := fmt.Sprintf("Body\n法人番号 : %s\n法人名  : %s\n法人住所 : %s\n公告   : %s\n成立年月日: %s\n解散年月日: %s\n資本金  : %s\n登記記録 : %s\n",
 		h.HoujinNumber,
 		h.HoujinName,
 		h.HoujinAddress,
 		h.HoujinKoukoku,
 		h.HoujinCreatedAt,
+		h.HoujinDissolvedAt,
 		h.HoujinCapital,
 		h.HoujinToukiRecord,
 	)
@@ -107,6 +109,10 @@ func (h *HoujinBody) GetHoujinKaku() (HoujinkakuType, error) {
 
 func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) {
 	if len(h.HoujinExecutive) == 0 {
+		if h.HoujinDissolvedAt != "" {
+			// 法人が解散していれば代表はいなくても良い
+			return []HoujinExecutiveValue{}, nil
+		}
 		return []HoujinExecutiveValue{}, fmt.Errorf("not found representative")
 	}
 
@@ -362,7 +368,6 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	for i, s := range parts {
 		isLast := i == len(parts)-1
 
-		fmt.Println(s)
 		s, position, name := getExecutiveNameAndPosition(s)
 		if position == "" || name == "" {
 			if strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") || strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任") {
@@ -378,10 +383,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			}
 			return nil, fmt.Errorf("failed to get executive name and position from %s", s)
 		}
-		fmt.Println("here")
-		fmt.Println(s)
 		s = mergeLines(s)
-		fmt.Println(s)
 
 		value, err := getValue(s)
 		if err != nil {
@@ -469,6 +471,20 @@ func (h *HoujinBody) ConsumeHoujinCreatedAt(s string) bool {
 	return false
 }
 
+func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
+	// ex 北海道知事の命令により解散
+	// ex 会社法４７２条第１項の規定により解散
+	pattern := fmt.Sprintf("┃解　散　*│　*([%s]+日)([%s]*)により解散", ZenkakuStringPattern, ZenkakuStringPattern)
+	regex := regexp.MustCompile(pattern)
+
+	matches := regex.FindStringSubmatch(s)
+	if len(matches) > 0 {
+		h.HoujinDissolvedAt = strings.TrimSpace(matches[1])
+		return true
+	}
+	return false
+}
+
 func (h *HoujinBody) ParseBodyMain(s string) error {
 	if strings.Contains(s, "発行可能株式総数") || strings.Contains(s, "┃目　的") || strings.Contains(s, "┃目的等") ||
 		strings.Contains(s, "出資１口の金額") || strings.Contains(s, "出資の総口数") || strings.Contains(s, "出資払込の方法") ||
@@ -476,7 +492,7 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		strings.Contains(s, "取締役等の会社") || strings.Contains(s, "非業務執行取締役") ||
 		strings.Contains(s, "取締役会設置会社") || strings.Contains(s, "監査役設置会社") || strings.Contains(s, "会計監査人設置会") ||
 		strings.Contains(s, "地区") || strings.Contains(s, "解散の事由") || strings.Contains(s, "監査役会設置会社") || strings.Contains(s, "資産の総額") ||
-		strings.Contains(s, "地　区") || strings.Contains(s, "解　散") || strings.Contains(s, "支　店") || strings.Contains(s, "従たる事務所") {
+		strings.Contains(s, "地　区") || strings.Contains(s, "支　店") || strings.Contains(s, "従たる事務所") {
 		// skip
 		return nil
 	}
@@ -507,6 +523,9 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		return nil
 	}
 	if h.ConsumeHoujinCreatedAt(s) {
+		return nil
+	}
+	if h.ConsumeHoujinDissolvedAt(s) {
 		return nil
 	}
 	if h.ConsumeHoujinCapital(s) {
