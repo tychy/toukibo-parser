@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -65,6 +66,18 @@ func DivideToukiboContent(input string) (string, []string, error) {
 type Houjin struct {
 	header *HoujinHeader
 	body   *HoujinBody
+}
+
+func (h *Houjin) GetToukiboCreatedAt() time.Time {
+	return h.header.CreatedAt
+}
+
+func (h *Houjin) GetHoujinName() string {
+	return h.header.CompanyName
+}
+
+func (h *Houjin) GetHoujinAddress() string {
+	return h.header.CompanyAddress
 }
 
 func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
