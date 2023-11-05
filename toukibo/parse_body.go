@@ -41,7 +41,7 @@ func (hva HoujinValueArray) String() string {
 
 type HoujinExecutiveValue struct {
 	Name       string
-	Pisition   string
+	Position   string
 	Address    string
 	IsValid    bool
 	RegisterAt string
@@ -50,7 +50,7 @@ type HoujinExecutiveValue struct {
 
 func (h *HoujinExecutiveValue) String() string {
 	return fmt.Sprintf("name: %s, position: %s, address: %s, isValid: %v, registerAt: %s, resignedAt: %s",
-		h.Name, h.Pisition, h.Address, h.IsValid, h.RegisterAt, h.ResignedAt)
+		h.Name, h.Position, h.Address, h.IsValid, h.RegisterAt, h.ResignedAt)
 }
 
 type HoujinExecutiveValueArray []HoujinExecutiveValue
@@ -119,7 +119,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	var res []HoujinExecutiveValue
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
-			if (v.Pisition == "代表取締役" || v.Pisition == "代表理事" || v.Pisition == "代表社員" || v.Pisition == "会長" || v.Pisition == "代表役員" || v.Pisition == "代表者" || v.Pisition == "会頭") && v.IsValid {
+			if (v.Position == "代表取締役" || v.Position == "代表理事" || v.Position == "代表社員" || v.Position == "会長" || v.Position == "代表役員" || v.Position == "代表者" || v.Position == "会頭") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -138,7 +138,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 		var res []HoujinExecutiveValue
 		for _, e := range h.HoujinExecutive {
 			for _, v := range e {
-				if (v.Pisition == "取締役") && v.IsValid {
+				if (v.Position == "取締役") && v.IsValid {
 					res = append(res, v)
 				}
 			}
@@ -152,7 +152,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 		var res []HoujinExecutiveValue
 		for _, e := range h.HoujinExecutive {
 			for _, v := range e {
-				if (v.Pisition == "無限責任社員") && v.IsValid {
+				if (v.Position == "無限責任社員") && v.IsValid {
 					res = append(res, v)
 				}
 			}
@@ -165,7 +165,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	// 理事が代表となる場合
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
-			if (v.Pisition == "理事") && v.IsValid {
+			if (v.Position == "理事") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -176,7 +176,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	// 清算人が代表となる場合
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
-			if (v.Pisition == "清算人") && v.IsValid {
+			if (v.Position == "清算人") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -187,7 +187,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	// 監査役が代表となる場合
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
-			if (v.Pisition == "監査役") && v.IsValid {
+			if (v.Position == "監査役") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -198,7 +198,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	// 社員が代表となる場合
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
-			if (v.Pisition == "社員") && v.IsValid {
+			if (v.Position == "社員") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -402,7 +402,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		res = append(res, HoujinExecutiveValue{
 			Name:       name,
 			Address:    value,
-			Pisition:   position,
+			Position:   position,
 			IsValid:    isLast,
 			RegisterAt: registerAt,
 		})

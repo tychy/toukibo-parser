@@ -21,12 +21,12 @@ run-all-sample: build
 get-sample: 
 	mkdir -p $(OUTPUT_DIR)
 	@for i in {1..500}; do \
-		curl -s -o "$(OUTPUT_DIR)/sample$$i.pdf" "$(URL)/remote-sample$$i.pdf" & \
+		curl -s -o $(OUTPUT_DIR)/sample$$i.pdf $(URL)/remote-sample$$i.pdf & \
 	done
 	wait
 	sleep 5
 	@for i in {500..$(NUM_SAMPLE)}; do \
-		curl -s -o "$(OUTPUT_DIR)/sample$$i.pdf" "$(URL)/remote-sample$$i.pdf" & \
+		curl -s -o $(OUTPUT_DIR)/sample$$i.pdf $(URL)/remote-sample$$i.pdf & \
 	done
 	wait
 
