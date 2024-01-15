@@ -1,5 +1,5 @@
-URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
-OUTPUT_DIR=sample
+URL=https://toukibo-sample-files.s3.ap-northeast-1.amazonaws.com
+OUTPUT_DIR=testdata/pdf
 NUM_SAMPLE=778
 
 build:
@@ -10,7 +10,7 @@ run: build
 	./bin/toukibo-parser -path=$(TARGET)
 
 run-sample: build
-	./bin/toukibo-parser -path="sample/$(TARGET).pdf"
+	./bin/toukibo-parser -path="testdata/pdf/$(TARGET).pdf"
 	
 run-all-sample: build
 	./run-all-sample.sh
@@ -20,15 +20,9 @@ run-all-sample: build
 
 get-sample: 
 	mkdir -p $(OUTPUT_DIR)
-	@for i in {1..500}; do \
-		curl -s -o $(OUTPUT_DIR)/sample$$i.pdf $(URL)/remote-sample$$i.pdf & \
+	@for i in {1..$(NUM_SAMPLE)}; do \
+		curl -s -o $(OUTPUT_DIR)/sample$$i.pdf $(URL)/sample$$i.pdf & \
 	done
-	wait
-	sleep 5
-	@for i in {500..$(NUM_SAMPLE)}; do \
-		curl -s -o $(OUTPUT_DIR)/sample$$i.pdf $(URL)/remote-sample$$i.pdf & \
-	done
-	wait
 
 
 clean:

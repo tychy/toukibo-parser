@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	f := flag.String("path", "sample1", "")
+	f := flag.String("path", "testdata/pdf/sample1.pdf", "")
 	flag.Parse()
 	path := fmt.Sprint(*f)
 	content, err := readPdf(path)
