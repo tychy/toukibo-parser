@@ -3,7 +3,7 @@
 
 ## 動作イメージ
 ```
- % make run TARGET=sample/sample2.pdf
+ % make run TARGET=sample2.pdf
 go run main.go -path=sample2
 Header
 PDF作成日時: 2021-03-29 17:58:00 +0000 UTC

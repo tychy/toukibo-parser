@@ -329,11 +329,6 @@ func GetHoujinValue(s string) (HoujinValueArray, error) {
 	return res, nil
 }
 
-// trim all space
-func trimAllSpace(s string) string {
-	return strings.ReplaceAll(s, "　", "")
-}
-
 func getShain(s string) (string, string, string) {
 	pattern := fmt.Sprintf("┃　*│　*社員　*([%s]+)", ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)

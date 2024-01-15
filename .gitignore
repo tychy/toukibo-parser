@@ -1,5 +1,4 @@
 bin
-remote-sample
-sample
+testdata
 
 .DS_Store

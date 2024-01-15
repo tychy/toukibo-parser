@@ -50,7 +50,7 @@ func ParseHeader(s string) (*HoujinHeader, error) {
 	if err != nil {
 		return nil, err
 	}
-	companyAddress := arr[2]
-	companyName := arr[3]
+	companyAddress := trimLeadingTrailingSpace(arr[2])
+	companyName := trimLeadingTrailingSpace(arr[3])
 	return &HoujinHeader{CreatedAt: createdAt, CompanyAddress: companyAddress, CompanyName: companyName}, nil
 }
