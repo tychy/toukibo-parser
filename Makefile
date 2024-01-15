@@ -18,6 +18,9 @@ run-all-sample: build
 # 133 住所が途中で切れている
 # 770 住所のパースがおかしい
 
+test: build
+	go test -v ./...
+
 get-sample: 
 	mkdir -p $(OUTPUT_DIR)
 	@for i in {1..$(NUM_SAMPLE)}; do \
