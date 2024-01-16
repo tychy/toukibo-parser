@@ -3,7 +3,7 @@
 
 ## 動作イメージ
 ```
- % make run TARGET=sample2.pdf
+ % make run/sample TARGET=sample2.pdf
 go run main.go -path=sample2
 Header
 PDF作成日時: 2021-03-29 17:58:00 +0000 UTC
@@ -24,16 +24,15 @@ Body
 
 ## テストを実行する場合
 ```
-% make get-sample
-% make run-all-sample
-// 現状テストの、形にはなっておらず、panicしなければOK
+% make get/sample
+% make test
 ```
 
 ## ライセンス
 このソフトウェアを利用するには、。ライセンス契約が必要です。詳細はcontact@tychy.jpまでお問い合わせください。
 
 ```
-Copyright 2023, Ryu Yamada.
+Copyright 2023 - 2024, Ryu Yamada.
 
 (JA) ソースコードおよびバイナリ形式の改変および再配布、許諾なき商用利用を禁止します。
 (EN) We prohibit the modification and redistribution of the source code

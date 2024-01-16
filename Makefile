@@ -1,5 +1,6 @@
-URL=https://toukibo-sample-files.s3.ap-northeast-1.amazonaws.com
-OUTPUT_DIR=testdata/pdf
+BUCKET_NAME=toukibo-parser-samples
+URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
+DATA_DIR=testdata
 NUM_SAMPLE=778
 
 build:
@@ -7,27 +8,40 @@ build:
 	go build -o bin/toukibo-parser main.go
 
 run: build
-	./bin/toukibo-parser -path=$(TARGET)
+	./bin/toukibo-parser -path=$(TARGET).pdf
 
-run-sample: build
-	./bin/toukibo-parser -path="testdata/pdf/$(TARGET).pdf"
+run/sample: build
+	./bin/toukibo-parser -path="$(DATA_DIR)/pdf/$(TARGET).pdf"
 	
-run-all-sample: build
+run/all: build
 	./run-all-sample.sh
 # ちょっとおかしいもの
 # 133 住所が途中で切れている
 # 770 住所のパースがおかしい
 
 test: build
-	go test -v ./...
+	go test -coverprofile=coverage.out -shuffle=on ./...
 
-get-sample: 
-	mkdir -p $(OUTPUT_DIR)
-	@for i in {1..$(NUM_SAMPLE)}; do \
-		curl -s -o $(OUTPUT_DIR)/sample$$i.pdf $(URL)/sample$$i.pdf & \
-	done
+coverage/show:
+	go tool cover -html=coverage.out
 
+zip/sample:
+	zip -r testdata.zip testdata
 
-clean:
+put/sample: zip/sample
+	wrangler r2 object delete $(BUCKET_NAME)/testdata.zip
+	wrangler r2 object put $(BUCKET_NAME)/testdata.zip --file testdata.zip
+	
+get/sample: clean/data
+	mkdir -p $(DATA_DIR)
+	curl -o testdata.zip $(URL)/testdata.zip
+	unzip testdata.zip
+
+clean: clean/bin clean/data
+
+clean/bin:
 	rm -rf bin
-	rm -rf $(OUTPUT_DIR)
+
+clean/data:
+	rm -rf $(DATA_DIR)
+	rm -rf testdata.zip
