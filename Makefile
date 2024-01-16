@@ -22,6 +22,9 @@ run/all: build
 test: build
 	go test -coverprofile=coverage.out -shuffle=on ./...
 
+coverage/show:
+	go tool cover -html=coverage.out
+
 zip/sample:
 	zip -r testdata.zip testdata
 
