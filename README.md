@@ -3,7 +3,7 @@
 
 ## 動作イメージ
 ```
- % make run TARGET=sample2.pdf
+ % make run/sample TARGET=sample2.pdf
 go run main.go -path=sample2
 Header
 PDF作成日時: 2021-03-29 17:58:00 +0000 UTC
@@ -24,9 +24,8 @@ Body
 
 ## テストを実行する場合
 ```
-% make get-sample
-% make run-all-sample
-// 現状テストの、形にはなっておらず、panicしなければOK
+% make get/sample
+% make test
 ```
 
 ## ライセンス
