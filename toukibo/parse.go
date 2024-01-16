@@ -138,13 +138,10 @@ func Parse(input string) (*Houjin, error) {
 		return nil, err
 	}
 
-	fmt.Println(houjinHeader.String())
-
 	houjinBody, err := ParseBody(body)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(houjinBody.String())
 	return &Houjin{header: houjinHeader, body: houjinBody}, nil
 }

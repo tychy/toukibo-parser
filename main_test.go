@@ -42,11 +42,11 @@ func TestToukiboParser(t *testing.T) {
 
 			// check
 			if h.GetHoujinName() != td.HoujinName {
-				t.Errorf("name is not match, expected: %s, actual: %s", td.HoujinName, h.GetHoujinName())
+				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s", td.HoujinName, h.GetHoujinName())
 			}
 
 			if h.GetHoujinAddress() != td.HoujinAddress {
-				t.Errorf("address is not match, expected: %s, actual: %s", td.HoujinAddress, h.GetHoujinAddress())
+				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s", td.HoujinAddress, h.GetHoujinAddress())
 			}
 
 		})

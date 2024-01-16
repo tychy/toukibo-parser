@@ -1,4 +1,6 @@
 bin
 testdata
-
+testdata.zip
 .DS_Store
+
+coverage.out
