@@ -1,0 +1,22 @@
+coverage:
+  paths:
+    - coverage.out
+codeToTestRatio:
+  code:
+    - '**/*.go'
+    - '!**/*_test.go'
+    - '!main.go'
+  test:
+    - '**/*_test.go'
+testExecutionTime:
+  if: true
+diff:
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
+comment:
+  if: is_pull_request
+summary:
+  if: is_pull_request
+report:
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
