@@ -32,7 +32,7 @@ Body
 このソフトウェアを利用するには、。ライセンス契約が必要です。詳細はcontact@tychy.jpまでお問い合わせください。
 
 ```
-Copyright 2023, Ryu Yamada.
+Copyright 2023 - 2024, Ryu Yamada.
 
 (JA) ソースコードおよびバイナリ形式の改変および再配布、許諾なき商用利用を禁止します。
 (EN) We prohibit the modification and redistribution of the source code
