@@ -16,7 +16,7 @@ type TestData struct {
 }
 
 func TestToukiboParser(t *testing.T) {
-	testCount := 10
+	testCount := 20
 
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
@@ -56,11 +56,11 @@ func TestToukiboParser(t *testing.T) {
 			}
 
 			if h.GetHoujinName() != td.HoujinName {
-				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s", td.HoujinName, h.GetHoujinName())
+				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s,", td.HoujinName, h.GetHoujinName())
 			}
 
 			if h.GetHoujinAddress() != td.HoujinAddress {
-				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s", td.HoujinAddress, h.GetHoujinAddress())
+				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s,", td.HoujinAddress, h.GetHoujinAddress())
 			}
 
 		})

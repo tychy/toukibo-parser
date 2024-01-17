@@ -416,7 +416,6 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		})
 
 	}
-	fmt.Println(res)
 	return res, nil
 }
 
