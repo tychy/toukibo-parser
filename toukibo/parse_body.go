@@ -357,6 +357,11 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 	return s, "", ""
 }
 
+func isResigned(s string) bool {
+	return strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") ||
+		strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任")
+}
+
 func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	parts := splitReverts(s)
 	res := make(HoujinExecutiveValueArray, 0, len(parts))
@@ -365,8 +370,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 		s, position, name := getExecutiveNameAndPosition(s)
 		if position == "" || name == "" {
-			if strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") ||
-				strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任") {
+			if isResigned(s) {
 				if !isLast || i == 0 {
 					return nil, fmt.Errorf("resign is not the last %s", s)
 				}
@@ -375,13 +379,14 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 					return nil, err
 				}
 				res[i-1].ResignedAt = resignedAt
+				res[i-1].IsValid = false
 				break
 			}
 			return nil, fmt.Errorf("failed to get executive name and position from %s", s)
 		}
 		s = mergeLines(s)
 
-		value, err := getValue(s)
+		address, err := getValue(s)
 		if err != nil {
 			return nil, err
 		}
@@ -394,15 +399,24 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 				fmt.Printf("failed to get registerAt from %s", parts[i])
 			}
 		}
+		var resignedAt string
+		if isResigned(s) {
+			resignedAt, err = getResignedAt(s)
+			if err != nil {
+				return nil, err
+			}
+		}
 		res = append(res, HoujinExecutiveValue{
 			Name:       name,
-			Address:    value,
+			Address:    address,
 			Position:   position,
-			IsValid:    isLast,
+			IsValid:    isLast && resignedAt == "", // 退任などが記載されないまま無効になる場合をisLastで判定する
 			RegisterAt: registerAt,
+			ResignedAt: resignedAt,
 		})
 
 	}
+	fmt.Println(res)
 	return res, nil
 }
 
