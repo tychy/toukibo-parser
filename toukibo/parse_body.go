@@ -316,7 +316,7 @@ func GetHoujinValue(s string) (HoujinValueArray, error) {
 				registerAt, err = getRegisterAt(s)
 				if err != nil {
 					// 登記が記載されていない場合無視する
-					fmt.Printf("failed to get registerAt from %s", parts[i])
+					fmt.Printf("GetHoujinValue: failed to get registerAt from %s", parts[i])
 				}
 			}
 			res[i] = HoujinValue{
@@ -396,7 +396,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			registerAt, err = getRegisterAt(s)
 			if err != nil {
 				// 登記が記載されていない場合無視する
-				fmt.Printf("failed to get registerAt from %s", parts[i])
+				fmt.Printf("GetHoujinExecutive: failed to get registerAt from %s", parts[i])
 			}
 		}
 		var resignedAt string
