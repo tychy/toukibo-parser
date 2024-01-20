@@ -80,6 +80,10 @@ func (h *Houjin) GetHoujinAddress() string {
 	return h.header.CompanyAddress
 }
 
+func (h *Houjin) GetHoujinDissolvedAt() string {
+	return h.body.HoujinDissolvedAt
+}
+
 func normalize_kanji(input string) string {
 	// https://www.natade.net/webapp/mojicode-kaiseki/
 	// https://codepoints.net/

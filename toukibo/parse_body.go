@@ -488,7 +488,7 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		h.HoujinDissolvedAt = strings.TrimSpace(matches[1])
+		h.HoujinDissolvedAt = zenkakuToHankaku(strings.TrimSpace(matches[1]))
 		return true
 	}
 	return false
