@@ -13,10 +13,11 @@ type TestData struct {
 	HoujinName                string   `yaml:"HoujinName"`
 	HoujinAddress             string   `yaml:"HoujinAddress"`
 	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
+	HoujinDissolvedAt         string   `yaml:"HoujinDissolvedAt"`
 }
 
 func TestToukiboParser(t *testing.T) {
-	testCount := 20
+	testCount := 50
 
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
@@ -61,6 +62,10 @@ func TestToukiboParser(t *testing.T) {
 
 			if h.GetHoujinAddress() != td.HoujinAddress {
 				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s,", td.HoujinAddress, h.GetHoujinAddress())
+			}
+
+			if h.GetHoujinDissolvedAt() != td.HoujinDissolvedAt {
+				t.Fatalf("dissolved_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinDissolvedAt, h.GetHoujinDissolvedAt())
 			}
 
 		})

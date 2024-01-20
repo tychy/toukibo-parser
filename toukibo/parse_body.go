@@ -316,7 +316,7 @@ func GetHoujinValue(s string) (HoujinValueArray, error) {
 				registerAt, err = getRegisterAt(s)
 				if err != nil {
 					// 登記が記載されていない場合無視する
-					fmt.Printf("failed to get registerAt from %s", parts[i])
+					fmt.Printf("GetHoujinValue: failed to get registerAt from %s", parts[i])
 				}
 			}
 			res[i] = HoujinValue{
@@ -367,7 +367,6 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	res := make(HoujinExecutiveValueArray, 0, len(parts))
 	for i, s := range parts {
 		isLast := i == len(parts)-1
-
 		s, position, name := getExecutiveNameAndPosition(s)
 		if position == "" || name == "" {
 			if isResigned(s) {
@@ -384,6 +383,13 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			}
 			return nil, fmt.Errorf("failed to get executive name and position from %s", s)
 		}
+
+		// sample47用のハック
+		// 登記ミスによって、役員間の仕切りが間違っている場合がある。その場合には同じ項目の中に複数の役員が記載されてしまう。そこで、isLastによるisValidの判定を再計算する。
+		if i != 0 && position != "" && position != res[i-1].Position && name != "" && name != res[i-1].Name {
+			res[i-1].IsValid = res[i-1].ResignedAt == ""
+		}
+
 		s = mergeLines(s)
 
 		address, err := getValue(s)
@@ -396,7 +402,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			registerAt, err = getRegisterAt(s)
 			if err != nil {
 				// 登記が記載されていない場合無視する
-				fmt.Printf("failed to get registerAt from %s", parts[i])
+				fmt.Printf("GetHoujinExecutive: failed to get registerAt from %s", parts[i])
 			}
 		}
 		var resignedAt string
@@ -488,7 +494,7 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		h.HoujinDissolvedAt = strings.TrimSpace(matches[1])
+		h.HoujinDissolvedAt = zenkakuToHankaku(strings.TrimSpace(matches[1]))
 		return true
 	}
 	return false
