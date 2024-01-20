@@ -80,19 +80,9 @@ func (h *Houjin) GetHoujinAddress() string {
 	return h.header.CompanyAddress
 }
 
-func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
-	r, err := h.body.GetHoujinRepresentatives()
-	if err != nil {
-		return nil, err
-	}
-	names := make([]string, len(r))
-	for i, v := range r {
-		names[i] = v.Name
-	}
-	return names, nil
-}
-
 func normalize_kanji(input string) string {
+	// https://www.natade.net/webapp/mojicode-kaiseki/
+	// https://codepoints.net/
 	var sb strings.Builder
 	for _, r := range input {
 		switch r {
@@ -120,11 +110,25 @@ func normalize_kanji(input string) string {
 			sb.WriteRune('吉')
 		case 60100:
 			sb.WriteRune('蛸')
+		case 63964:
+			sb.WriteRune('隆')
 		default:
 			sb.WriteRune(r)
 		}
 	}
 	return sb.String()
+}
+
+func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
+	r, err := h.body.GetHoujinRepresentatives()
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, len(r))
+	for i, v := range r {
+		names[i] = v.Name
+	}
+	return names, nil
 }
 
 func Parse(input string) (*Houjin, error) {
