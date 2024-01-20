@@ -37,6 +37,9 @@ get/sample: clean/data
 	curl -o testdata.zip $(URL)/testdata.zip
 	unzip testdata.zip
 
+open/sample:
+	open $(DATA_DIR)/pdf/$(TARGET).pdf
+
 clean: clean/bin clean/data
 
 clean/bin:

@@ -10,12 +10,13 @@ import (
 )
 
 type TestData struct {
-	HoujinName    string `yaml:"HoujinName"`
-	HoujinAddress string `yaml:"HoujinAddress"`
+	HoujinName                string   `yaml:"HoujinName"`
+	HoujinAddress             string   `yaml:"HoujinAddress"`
+	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
 }
 
 func TestToukiboParser(t *testing.T) {
-	testCount := 10
+	testCount := 20
 
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
@@ -41,12 +42,25 @@ func TestToukiboParser(t *testing.T) {
 			}
 
 			// check
+			n, err := h.GetHoujinRepresentativeNames()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(n) != len(td.HoujinRepresentativeNames) {
+				t.Fatalf("representative name count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinRepresentativeNames), len(n))
+			}
+			for i, v := range n {
+				if v != td.HoujinRepresentativeNames[i] {
+					t.Fatalf("representative name is not match,\nwant : %s,\ngot  : %s", td.HoujinRepresentativeNames[i], v)
+				}
+			}
+
 			if h.GetHoujinName() != td.HoujinName {
-				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s", td.HoujinName, h.GetHoujinName())
+				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s,", td.HoujinName, h.GetHoujinName())
 			}
 
 			if h.GetHoujinAddress() != td.HoujinAddress {
-				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s", td.HoujinAddress, h.GetHoujinAddress())
+				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s,", td.HoujinAddress, h.GetHoujinAddress())
 			}
 
 		})
