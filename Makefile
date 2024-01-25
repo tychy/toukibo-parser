@@ -19,6 +19,11 @@ run/all: build
 # 133 住所が途中で切れている
 # 770 住所のパースがおかしい
 
+annotate:
+	./bin/toukibo-parser -path="$(DATA_DIR)/pdf/$(TARGET).pdf" > $(DATA_DIR)/yaml/$(TARGET).yaml
+	make open/sample TARGET=$(TARGET)
+	vi $(DATA_DIR)/yaml/$(TARGET).yaml
+
 test: build
 	go test -coverprofile=coverage.out -shuffle=on ./...
 

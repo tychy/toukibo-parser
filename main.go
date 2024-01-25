@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/tychy/toukibo_parser/pdf"
 	"github.com/tychy/toukibo_parser/toukibo"
@@ -26,7 +27,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("代表:", names)
+	fmt.Println("HoujinName: " + h.GetHoujinName())
+	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
+	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(names, ",") + "]")
+	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())
 	return
 }
 
