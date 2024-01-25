@@ -119,7 +119,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	var res []HoujinExecutiveValue
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
-			if (v.Position == "代表取締役" || v.Position == "代表理事" || v.Position == "代表社員" || v.Position == "会長" || v.Position == "代表役員" || v.Position == "代表者" || v.Position == "会頭") && v.IsValid {
+			if (v.Position == "代表取締役" || v.Position == "代表理事" || v.Position == "代表社員" || v.Position == "会長" || v.Position == "代表役員" || v.Position == "代表者" || v.Position == "理事長" || v.Position == "会頭") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -341,7 +341,7 @@ func getShain(s string) (string, string, string) {
 }
 
 func getExecutiveNameAndPosition(s string) (string, string, string) {
-	positions := "代表取締役|取締役|監査役|会計監査人|代表理事|理事|監事|代表社員|業務執行社員|会長|清算人|代表役員|会計参与|無限責任社員|有限責任社員|破産管財人|評議員|代表者|会頭"
+	positions := "代表取締役|取締役|監査役|会計監査人|代表理事|理事長|理事|監事|代表社員|業務執行社員|会長|清算人|代表役員|会計参与|無限責任社員|有限責任社員|破産管財人|評議員|代表者|会頭"
 	pattern := fmt.Sprintf("(%s)　*([%s]+)", positions, ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)
 	matches := regex.FindStringSubmatch(s)
@@ -420,7 +420,6 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			RegisterAt: registerAt,
 			ResignedAt: resignedAt,
 		})
-
 	}
 	return res, nil
 }
