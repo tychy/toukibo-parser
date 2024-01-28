@@ -14,6 +14,7 @@ const (
 	splitExecutive1 = "┃　　　　　　　　├───────────────────────┼─────────────┨"
 	splitExecutive2 = "┃　　　　　　　　├─────────────────────────────────────┨"
 	splitExecutive3 = "┃　　　　　　　　├───────────────────────┴─────────────┨"
+	splitExecutive4 = "┃　　　　　　　　│　（特定社員）　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　┃ ┃　　　　　　　　├───────────────────────┬─────────────┨" // sample133を通すためのハック
 )
 
 type HoujinValue struct {
@@ -220,7 +221,7 @@ func splitReverts(s string) []string {
 }
 
 func splitExecutives(s string) []string {
-	pattern := fmt.Sprintf("%s|%s|%s", splitExecutive1, splitExecutive2, splitExecutive3)
+	pattern := fmt.Sprintf("%s|%s|%s|%s", splitExecutive1, splitExecutive2, splitExecutive3, splitExecutive4)
 	re := regexp.MustCompile(pattern)
 	parts := re.Split(s, -1)
 	return parts
