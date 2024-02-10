@@ -84,6 +84,15 @@ func (h *Houjin) GetHoujinDissolvedAt() string {
 	return h.body.HoujinDissolvedAt
 }
 
+func (h *Houjin) GetHoujinCapital() string {
+	for _, v := range h.body.HoujinCapital {
+		if v.IsValid {
+			return v.Value
+		}
+	}
+	return ""
+}
+
 func normalize_kanji(input string) string {
 	// https://www.natade.net/webapp/mojicode-kaiseki/
 	// https://codepoints.net/
