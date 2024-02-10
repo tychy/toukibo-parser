@@ -14,17 +14,22 @@ run/sample: build
 	./bin/toukibo-parser -path="$(DATA_DIR)/pdf/$(TARGET).pdf"
 	
 
+edit:
+	cat $(DATA_DIR)/yaml/$(TARGET).yaml
+
+check:
+	make open/sample TARGET=$(TARGET)
+	make edit TARGET=$(TARGET)
+
 annotate:
 	./bin/toukibo-parser -path="$(DATA_DIR)/pdf/$(TARGET).pdf" > $(DATA_DIR)/yaml/$(TARGET).yaml
-	make open/sample TARGET=$(TARGET)
-	vi $(DATA_DIR)/yaml/$(TARGET).yaml
+	make check TARGET=$(TARGET)
 
 annotate/all: build
-	./annotate-all-sample.sh
+	./annotate-samples.sh
 # ちょっとおかしいもの
 # 133 住所が途中で切れている
 # 770 住所のパースがおかしい
-
 
 test: build
 	go test -coverprofile=coverage.out -shuffle=on ./...
