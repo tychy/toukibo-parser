@@ -84,13 +84,17 @@ func (h *Houjin) GetHoujinDissolvedAt() string {
 	return h.body.HoujinDissolvedAt
 }
 
-func (h *Houjin) GetHoujinCapital() string {
+func (h *Houjin) GetHoujinCapital() int {
 	for _, v := range h.body.HoujinCapital {
 		if v.IsValid {
-			return v.Value
+			res := v.Value
+			if len(res) < 1 {
+				return 0
+			}
+			return YenToNumber(v.Value)
 		}
 	}
-	return ""
+	return 0
 }
 
 func normalize_kanji(input string) string {

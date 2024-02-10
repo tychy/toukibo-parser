@@ -69,8 +69,8 @@ func TestToukiboParser(t *testing.T) {
 				t.Fatalf("dissolved_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinDissolvedAt, h.GetHoujinDissolvedAt())
 			}
 
-			if h.GetHoujinCapital() != td.HoujinCapital {
-				t.Fatalf("capital is not match,\nwant : %s,\ngot  : %s,", td.HoujinCapital, h.GetHoujinCapital())
+			if fmt.Sprint(h.GetHoujinCapital()) != td.HoujinCapital {
+				t.Fatalf("capital is not match,\nwant : %s,\ngot  : %d,", td.HoujinCapital, h.GetHoujinCapital())
 			}
 
 		})
