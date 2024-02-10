@@ -2,6 +2,7 @@ package toukibo
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 )
@@ -317,7 +318,7 @@ func GetHoujinValue(s string) (HoujinValueArray, error) {
 				registerAt, err = getRegisterAt(s)
 				if err != nil {
 					// 登記が記載されていない場合無視する
-					fmt.Printf("GetHoujinValue: failed to get registerAt from %s", parts[i])
+					slog.Debug(fmt.Sprintf("GetHoujinValue: failed to get registerAt from %s", parts[i]))
 				}
 			}
 			res[i] = HoujinValue{
@@ -403,7 +404,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			registerAt, err = getRegisterAt(s)
 			if err != nil {
 				// 登記が記載されていない場合無視する
-				fmt.Printf("GetHoujinExecutive: failed to get registerAt from %s", parts[i])
+				slog.Debug(fmt.Sprintf("GetHoujinExecutive: failed to get registerAt from %s", parts[i]))
 			}
 		}
 		var resignedAt string
@@ -432,7 +433,7 @@ func (h *HoujinBody) ConsumeHoujinNumber(s string) bool {
 
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		h.HoujinNumber = zenkakuToHankaku(matches[1])
+		h.HoujinNumber = ZenkakuToHankaku(matches[1])
 		return true
 	}
 	return false
@@ -463,7 +464,7 @@ func (h *HoujinBody) ConsumeHoujinKoukoku(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinCapital(s string) bool {
-	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額")
+	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額") || strings.Contains(s, "出資の総額")
 }
 
 func (h *HoujinBody) ConsumeHoujinToukiRecord(s string) bool {
@@ -494,7 +495,7 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		h.HoujinDissolvedAt = zenkakuToHankaku(strings.TrimSpace(matches[1]))
+		h.HoujinDissolvedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
 		return true
 	}
 	return false

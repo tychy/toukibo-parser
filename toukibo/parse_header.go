@@ -29,8 +29,8 @@ func ReadCreatedAt(s string) (time.Time, error) {
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
 		// 全角数字を半角数字に変換
-		dateStr := zenkakuToHankaku(matches[1])
-		timeStr := zenkakuToHankaku(matches[2])
+		dateStr := ZenkakuToHankaku(matches[1])
+		timeStr := ZenkakuToHankaku(matches[2])
 
 		// 日付と時刻を time.Time 型に変換
 		layout := "2006/01/02 15:04"
