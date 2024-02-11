@@ -10,6 +10,7 @@ import (
 )
 
 type TestData struct {
+	HoujinKaku                string   `yaml:"HoujinKaku"`
 	HoujinName                string   `yaml:"HoujinName"`
 	HoujinAddress             string   `yaml:"HoujinAddress"`
 	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
