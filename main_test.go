@@ -10,6 +10,7 @@ import (
 )
 
 type TestData struct {
+	HoujinKaku                string   `yaml:"HoujinKaku"`
 	HoujinName                string   `yaml:"HoujinName"`
 	HoujinAddress             string   `yaml:"HoujinAddress"`
 	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
@@ -55,6 +56,10 @@ func TestToukiboParser(t *testing.T) {
 				if v != td.HoujinRepresentativeNames[i] {
 					t.Fatalf("representative name is not match,\nwant : %s,\ngot  : %s", td.HoujinRepresentativeNames[i], v)
 				}
+			}
+
+			if h.GetHoujinKaku() != td.HoujinKaku {
+				t.Fatalf("kaku is not match,\nwant : %s,\ngot  : %s,", td.HoujinKaku, h.GetHoujinKaku())
 			}
 
 			if h.GetHoujinName() != td.HoujinName {

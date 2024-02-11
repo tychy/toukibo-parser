@@ -27,6 +27,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("HoujinKaku: " + h.GetHoujinKaku())
 	fmt.Println("HoujinName: " + h.GetHoujinName())
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
 	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(names, ",") + "]")
