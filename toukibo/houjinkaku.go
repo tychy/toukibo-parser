@@ -80,7 +80,7 @@ func FindHoujinKaku(s string) HoujinkakuType {
 		return HoujinKakuIppanZaisan
 	} else if strings.Contains(s, "一般財団法人") {
 		return HoujinKakuIppanZaidan
-	} else if strings.Contains(s, "NPO法人") {
+	} else if strings.Contains(s, "NPO法人") || strings.Contains(s, "ＮＰＯ法人") {
 		return HoujinKakuNPO
 	} else if strings.Contains(s, "特定非営利活動法人") {
 		return HoujinKakuTokuteiHieiri
