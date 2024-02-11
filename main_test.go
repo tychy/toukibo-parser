@@ -13,6 +13,7 @@ type TestData struct {
 	HoujinKaku                string   `yaml:"HoujinKaku"`
 	HoujinName                string   `yaml:"HoujinName"`
 	HoujinAddress             string   `yaml:"HoujinAddress"`
+	HoujinExecutiveNames      []string `yaml:"HoujinExecutiveNames"`
 	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
 	HoujinDissolvedAt         string   `yaml:"HoujinDissolvedAt"`
 	HoujinCapital             string   `yaml:"HoujinCapital"`
@@ -45,14 +46,28 @@ func TestToukiboParser(t *testing.T) {
 			}
 
 			// check
-			n, err := h.GetHoujinRepresentativeNames()
+			execNames, err := h.ListHoujinExecutives()
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(n) != len(td.HoujinRepresentativeNames) {
-				t.Fatalf("representative name count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinRepresentativeNames), len(n))
+
+			if len(execNames) != len(td.HoujinExecutiveNames) {
+				t.Fatalf("executive name count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinExecutiveNames), len(execNames))
 			}
-			for i, v := range n {
+			for i, v := range execNames {
+				if v != td.HoujinExecutiveNames[i] {
+					t.Fatalf("executive name is not match,\nwant : %s,\ngot  : %s", td.HoujinExecutiveNames[i], v)
+				}
+			}
+
+			repNames, err := h.GetHoujinRepresentativeNames()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(repNames) != len(td.HoujinRepresentativeNames) {
+				t.Fatalf("representative name count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinRepresentativeNames), len(repNames))
+			}
+			for i, v := range repNames {
 				if v != td.HoujinRepresentativeNames[i] {
 					t.Fatalf("representative name is not match,\nwant : %s,\ngot  : %s", td.HoujinRepresentativeNames[i], v)
 				}

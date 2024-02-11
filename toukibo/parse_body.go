@@ -109,6 +109,21 @@ func (h *HoujinBody) GetHoujinKaku() (HoujinkakuType, error) {
 	return HoujinKakuUnknown, fmt.Errorf("not found houjin name")
 }
 
+func (h *HoujinBody) ListHoujinExecutives() ([]HoujinExecutiveValue, error) {
+	var res []HoujinExecutiveValue
+	for _, e := range h.HoujinExecutive {
+		for _, v := range e {
+			if v.IsValid {
+				res = append(res, v)
+			}
+		}
+	}
+	if len(res) > 0 {
+		return res, nil
+	}
+	return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
+}
+
 func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) {
 	if len(h.HoujinExecutive) == 0 {
 		if h.HoujinDissolvedAt != "" {

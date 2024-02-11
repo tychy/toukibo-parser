@@ -23,14 +23,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	names, err := h.GetHoujinRepresentativeNames()
+	repName, err := h.GetHoujinRepresentativeNames()
 	if err != nil {
 		panic(err)
 	}
+	execNames, err := h.ListHoujinExecutives()
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("HoujinKaku: " + h.GetHoujinKaku())
 	fmt.Println("HoujinName: " + h.GetHoujinName())
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
-	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(names, ",") + "]")
+	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
+	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")
 	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())
 	fmt.Println("HoujinCapital: ", h.GetHoujinCapital())
 	return
