@@ -143,6 +143,18 @@ func normalize_kanji(input string) string {
 	return sb.String()
 }
 
+func (h *Houjin) ListHoujinExecutives() ([]string, error) {
+	execs, err := h.body.ListHoujinExecutives()
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, len(execs))
+	for i, v := range execs {
+		names[i] = v.Name
+	}
+	return names, nil
+}
+
 func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
 	r, err := h.body.GetHoujinRepresentatives()
 	if err != nil {
