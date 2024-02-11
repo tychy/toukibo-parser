@@ -492,7 +492,7 @@ func (h *HoujinBody) ConsumeHoujinKoukoku(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinCapital(s string) bool {
-	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額") || strings.Contains(s, "出資の総額") || strings.Contains(s, "資産の総額")
+	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額") || strings.Contains(s, "出資の総額") || strings.Contains(s, "資産の総額") || strings.Contains(s, "基本財産の総額")
 }
 
 func (h *HoujinBody) ConsumeHoujinToukiRecord(s string) bool {
