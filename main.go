@@ -37,8 +37,9 @@ func main() {
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
 	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
 	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")
-	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())
 	fmt.Println("HoujinCapital: ", h.GetHoujinCapital())
+	fmt.Println("HoujinCreatedAt: " + h.GetHoujinCreatedAt())
+	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())
 	return
 }
 

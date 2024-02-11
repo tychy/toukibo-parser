@@ -85,6 +85,10 @@ func (h *Houjin) GetHoujinAddress() string {
 	return h.header.CompanyAddress
 }
 
+func (h *Houjin) GetHoujinCreatedAt() string {
+	return h.body.HoujinCreatedAt
+}
+
 func (h *Houjin) GetHoujinDissolvedAt() string {
 	return h.body.HoujinDissolvedAt
 }
