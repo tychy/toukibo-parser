@@ -496,7 +496,7 @@ func (h *HoujinBody) ConsumeHoujinCreatedAt(s string) bool {
 
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		h.HoujinCreatedAt = strings.TrimSpace(matches[2])
+		h.HoujinCreatedAt = ZenkakuToHankaku(strings.TrimSpace(matches[2]))
 		return true
 	}
 	return false

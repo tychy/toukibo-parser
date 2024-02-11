@@ -15,8 +15,9 @@ type TestData struct {
 	HoujinAddress             string   `yaml:"HoujinAddress"`
 	HoujinExecutiveNames      []string `yaml:"HoujinExecutiveNames"`
 	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
-	HoujinDissolvedAt         string   `yaml:"HoujinDissolvedAt"`
 	HoujinCapital             string   `yaml:"HoujinCapital"`
+	HoujinCreatedAt           string   `yaml:"HoujinCreatedAt"`
+	HoujinDissolvedAt         string   `yaml:"HoujinDissolvedAt"`
 }
 
 func TestToukiboParser(t *testing.T) {
