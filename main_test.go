@@ -58,6 +58,10 @@ func TestToukiboParser(t *testing.T) {
 				}
 			}
 
+			if h.GetHoujinKaku() != td.HoujinKaku {
+				t.Fatalf("kaku is not match,\nwant : %s,\ngot  : %s,", td.HoujinKaku, h.GetHoujinKaku())
+			}
+
 			if h.GetHoujinName() != td.HoujinName {
 				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s,", td.HoujinName, h.GetHoujinName())
 			}
