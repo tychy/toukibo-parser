@@ -89,6 +89,10 @@ func (h *Houjin) GetHoujinCreatedAt() string {
 	return h.body.HoujinCreatedAt
 }
 
+func (h *Houjin) GetHoujinBankruptedAt() string {
+	return h.body.HoujinBankruptedAt
+}
+
 func (h *Houjin) GetHoujinDissolvedAt() string {
 	return h.body.HoujinDissolvedAt
 }

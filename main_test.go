@@ -17,6 +17,7 @@ type TestData struct {
 	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
 	HoujinCapital             string   `yaml:"HoujinCapital"`
 	HoujinCreatedAt           string   `yaml:"HoujinCreatedAt"`
+	HoujinBankruptedAt        string   `yaml:"HoujinBankruptedAt"`
 	HoujinDissolvedAt         string   `yaml:"HoujinDissolvedAt"`
 }
 
@@ -47,6 +48,20 @@ func TestToukiboParser(t *testing.T) {
 			}
 
 			// check
+
+			if h.GetHoujinKaku() != td.HoujinKaku {
+				t.Fatalf("kaku is not match,\nwant : %s,\ngot  : %s,", td.HoujinKaku, h.GetHoujinKaku())
+			}
+
+			if h.GetHoujinName() != td.HoujinName {
+				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s,", td.HoujinName, h.GetHoujinName())
+			}
+
+			if h.GetHoujinAddress() != td.HoujinAddress {
+				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s,", td.HoujinAddress, h.GetHoujinAddress())
+			}
+
+			// ExecutiveNames
 			execNames, err := h.ListHoujinExecutives()
 			if err != nil {
 				t.Fatal(err)
@@ -61,6 +76,7 @@ func TestToukiboParser(t *testing.T) {
 				}
 			}
 
+			// RepresentativeNames
 			repNames, err := h.GetHoujinRepresentativeNames()
 			if err != nil {
 				t.Fatal(err)
@@ -74,24 +90,20 @@ func TestToukiboParser(t *testing.T) {
 				}
 			}
 
-			if h.GetHoujinKaku() != td.HoujinKaku {
-				t.Fatalf("kaku is not match,\nwant : %s,\ngot  : %s,", td.HoujinKaku, h.GetHoujinKaku())
+			if fmt.Sprint(h.GetHoujinCapital()) != td.HoujinCapital {
+				t.Fatalf("capital is not match,\nwant : %s,\ngot  : %d,", td.HoujinCapital, h.GetHoujinCapital())
 			}
 
-			if h.GetHoujinName() != td.HoujinName {
-				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s,", td.HoujinName, h.GetHoujinName())
+			if h.GetHoujinCreatedAt() != td.HoujinCreatedAt {
+				t.Fatalf("created_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinCreatedAt, h.GetHoujinCreatedAt())
 			}
 
-			if h.GetHoujinAddress() != td.HoujinAddress {
-				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s,", td.HoujinAddress, h.GetHoujinAddress())
+			if h.GetHoujinBankruptedAt() != td.HoujinBankruptedAt {
+				t.Fatalf("bankrupted_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinBankruptedAt, h.GetHoujinBankruptedAt())
 			}
 
 			if h.GetHoujinDissolvedAt() != td.HoujinDissolvedAt {
 				t.Fatalf("dissolved_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinDissolvedAt, h.GetHoujinDissolvedAt())
-			}
-
-			if fmt.Sprint(h.GetHoujinCapital()) != td.HoujinCapital {
-				t.Fatalf("capital is not match,\nwant : %s,\ngot  : %d,", td.HoujinCapital, h.GetHoujinCapital())
 			}
 
 		})

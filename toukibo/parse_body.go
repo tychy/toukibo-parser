@@ -68,15 +68,16 @@ func (hva HoujinExecutiveValueArray) String() string {
 }
 
 type HoujinBody struct {
-	HoujinNumber      string
-	HoujinName        HoujinValueArray
-	HoujinAddress     HoujinValueArray
-	HoujinKoukoku     string
-	HoujinCreatedAt   string
-	HoujinDissolvedAt string
-	HoujinCapital     HoujinValueArray
-	HoujinToukiRecord HoujinValueArray
-	HoujinExecutive   []HoujinExecutiveValueArray
+	HoujinNumber       string
+	HoujinName         HoujinValueArray
+	HoujinAddress      HoujinValueArray
+	HoujinKoukoku      string
+	HoujinCreatedAt    string
+	HoujinBankruptedAt string
+	HoujinDissolvedAt  string
+	HoujinCapital      HoujinValueArray
+	HoujinToukiRecord  HoujinValueArray
+	HoujinExecutive    []HoujinExecutiveValueArray
 }
 
 func (h *HoujinBody) String() string {
@@ -529,6 +530,18 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 	return false
 }
 
+func (h *HoujinBody) ConsumeHoujinBankruptedAt(s string) bool {
+	pattern := fmt.Sprintf("┃破　産　*│　*([%s]+日)([%s]*)", ZenkakuStringPattern, ZenkakuStringPattern)
+	regex := regexp.MustCompile(pattern)
+
+	matches := regex.FindStringSubmatch(s)
+	if len(matches) > 0 {
+		h.HoujinBankruptedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
+		return true
+	}
+	return false
+}
+
 func (h *HoujinBody) ParseBodyMain(s string) error {
 	if strings.Contains(s, "発行可能株式総数") || strings.Contains(s, "┃目　的") || strings.Contains(s, "┃目的等") ||
 		strings.Contains(s, "出資１口の金額") || strings.Contains(s, "出資の総口数") || strings.Contains(s, "出資払込の方法") ||
@@ -567,6 +580,9 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		return nil
 	}
 	if h.ConsumeHoujinCreatedAt(s) {
+		return nil
+	}
+	if h.ConsumeHoujinBankruptedAt(s) {
 		return nil
 	}
 	if h.ConsumeHoujinDissolvedAt(s) {
