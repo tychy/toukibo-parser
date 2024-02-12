@@ -69,6 +69,7 @@ func (hva HoujinExecutiveValueArray) String() string {
 
 type HoujinBody struct {
 	HoujinNumber       string
+	HoujinKaku         HoujinkakuType
 	HoujinName         HoujinValueArray
 	HoujinAddress      HoujinValueArray
 	HoujinKoukoku      string
@@ -630,5 +631,6 @@ func ParseBody(pairs []string) (*HoujinBody, error) {
 			return nil, err
 		}
 	}
+
 	return h, nil
 }

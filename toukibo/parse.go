@@ -73,8 +73,7 @@ func (h *Houjin) GetToukiboCreatedAt() time.Time {
 }
 
 func (h *Houjin) GetHoujinKaku() string {
-	houjinKaku := FindHoujinKaku(h.GetHoujinName())
-	return string(houjinKaku)
+	return string(h.body.HoujinKaku)
 }
 
 func (h *Houjin) GetHoujinName() string {
@@ -189,6 +188,16 @@ func Parse(input string) (*Houjin, error) {
 	houjinBody, err := ParseBody(body)
 	if err != nil {
 		return nil, err
+	}
+
+	// Get HoujinKaku
+	houjinKakuType := FindHoujinKaku(houjinHeader.CompanyName)
+	if houjinKakuType == HoujinKakuUnknown {
+		if strings.Contains(s, "宗教法人") {
+			houjinBody.HoujinKaku = HoujinKakuShukyo
+		}
+	} else {
+		houjinBody.HoujinKaku = houjinKakuType
 	}
 
 	return &Houjin{header: houjinHeader, body: houjinBody}, nil
