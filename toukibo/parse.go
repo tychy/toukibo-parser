@@ -139,7 +139,7 @@ func normalize_kanji(input string) string {
 			sb.WriteRune('吉')
 		case 60100:
 			sb.WriteRune('蛸')
-		case 63964:
+		case 63964, 59478:
 			sb.WriteRune('隆')
 		case 59424:
 			sb.WriteRune('座')
