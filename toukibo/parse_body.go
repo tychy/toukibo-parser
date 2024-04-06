@@ -250,11 +250,6 @@ func trimPattern(s, pattern string) string {
 	return re.ReplaceAllString(s, "")
 }
 
-func mergeLines(s string) string {
-	pattern := "　*┃ ┃　*│　*"
-	return trimPattern(s, pattern)
-}
-
 func trimChangeAndRegisterAt(s string) (string, string, string) {
 	// trim ┃　　　　　　　　│　　　　　　　　　平成３０年　７月３１日変更　　平成３０年　８月２７日登記┃
 	pattern := fmt.Sprintf("┃　*│　*([%s]+)変更　*([%s]+)登記　*┃", ZenkakuStringPattern, ZenkakuStringPattern)
@@ -316,7 +311,6 @@ func GetHoujinValue(s string) (HoujinValueArray, error) {
 		if registerAt == "" {
 			s, registerAt = trimRegisterAt(s)
 		}
-		s = mergeLines(s)
 
 		isLast := i == len(parts)-1
 		value, err := getValue(s)
@@ -421,8 +415,6 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		if i != 0 && position != "" && position != res[i-1].Position && name != "" && name != res[i-1].Name {
 			res[i-1].IsValid = res[i-1].ResignedAt == ""
 		}
-
-		s = mergeLines(s)
 
 		address, err := getValue(s)
 		if err != nil {
