@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tychy/toukibo_parser/toukibo"
+	"github.com/tychy/toukibo-parser/toukibo"
 	"gopkg.in/yaml.v3"
 )
 

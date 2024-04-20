@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tychy/toukibo_parser/pdf"
-	"github.com/tychy/toukibo_parser/toukibo"
+	"github.com/tychy/toukibo-parser/pdf"
+	"github.com/tychy/toukibo-parser/toukibo"
 )
 
 func main() {
