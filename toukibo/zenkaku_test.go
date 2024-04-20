@@ -3,7 +3,7 @@ package toukibo_test
 import (
 	"testing"
 
-	"github.com/tychy/toukibo_parser/toukibo"
+	"github.com/tychy/toukibo-parser/toukibo"
 )
 
 func TestZenkakuToHankaku(t *testing.T) {

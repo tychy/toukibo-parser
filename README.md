@@ -1,4 +1,4 @@
-# toukibo_parser
+# toukibo-parser
 商業登記簿パーサー
 
 ## 動作イメージ
