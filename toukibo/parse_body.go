@@ -375,20 +375,8 @@ func isResigned(s string) bool {
 		strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任")
 }
 
-func skipKansaNotice(parts []string) []string {
-	res := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if strings.Contains(p, "監査役の監査の範囲を会計に関するものに限定") {
-			continue
-		}
-		res = append(res, p)
-	}
-	return res
-}
-
 func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
-	split := splitReverts(s)
-	parts := skipKansaNotice(split)
+	parts := splitReverts(s)
 
 	res := make(HoujinExecutiveValueArray, 0, len(parts))
 	for i, s := range parts {
@@ -601,6 +589,9 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		executives := splitExecutives(s)
 		h.HoujinExecutive = make([]HoujinExecutiveValueArray, len(executives))
 		for i, e := range executives {
+			if strings.Contains(e, "監査役の監査の範囲を会計に関するものに限定") {
+				continue
+			}
 			v, err := GetHoujinExecutiveValue(e)
 			if err != nil {
 				return err
