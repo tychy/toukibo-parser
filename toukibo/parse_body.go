@@ -112,6 +112,14 @@ func (h *HoujinBody) GetHoujinKaku() (HoujinkakuType, error) {
 }
 
 func (h *HoujinBody) ListHoujinExecutives() ([]HoujinExecutiveValue, error) {
+	if len(h.HoujinExecutive) == 0 {
+		if h.HoujinDissolvedAt != "" {
+			// 法人が解散していれば代表はいなくても良い
+			return []HoujinExecutiveValue{}, nil
+		}
+		return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
+	}
+
 	var res []HoujinExecutiveValue
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
@@ -474,7 +482,7 @@ func (h *HoujinBody) ConsumeHoujinKoukoku(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinCapital(s string) bool {
-	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額") || strings.Contains(s, "出資の総額") || strings.Contains(s, "資産の総額") || strings.Contains(s, "基本財産の総額")
+	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額") || strings.Contains(s, "出資の総額") || strings.Contains(s, "資産の総額") || strings.Contains(s, "基本財産の総額") || strings.Contains(s, "特定資本の額")
 }
 
 func (h *HoujinBody) ConsumeHoujinToukiRecord(s string) bool {
