@@ -467,7 +467,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	evsArr := make(HoujinExecutiveValueArray, 0, len(parts))
 	var idx int
 	for _, p := range parts {
-		PrintSlice(extractLines(p))
+		//PrintSlice(extractLines(p))
 		lines := extractLines(p)
 		evs := HoujinExecutiveValue{
 			IsValid: true,
@@ -526,7 +526,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		idx++
 		evsArr = append(evsArr, evs)
 	}
-	fmt.Println(evsArr)
+	//fmt.Println(evsArr)
 	return evsArr, nil
 
 }
@@ -688,7 +688,7 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 				continue
 			}
 
-			PrintBar()
+			// PrintBar()
 			v, err := GetHoujinExecutiveValue(e)
 			if err != nil {
 				return err
