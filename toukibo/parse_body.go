@@ -149,9 +149,33 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	}
 
 	var res []HoujinExecutiveValue
+	// 代表清算人が代表となる場合
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
-			if (v.Position == "代表取締役" || v.Position == "代表理事" || v.Position == "代表社員" || v.Position == "会長" || v.Position == "代表役員" || v.Position == "代表者" || v.Position == "理事長" || v.Position == "会頭" || v.Position == "代表清算人") && v.IsValid {
+			if (v.Position == "代表清算人") && v.IsValid {
+				res = append(res, v)
+			}
+		}
+	}
+	if len(res) > 0 {
+		return res, nil
+	}
+
+	// 清算人が代表となる場合
+	for _, e := range h.HoujinExecutive {
+		for _, v := range e {
+			if (v.Position == "清算人") && v.IsValid {
+				res = append(res, v)
+			}
+		}
+	}
+	if len(res) > 0 {
+		return res, nil
+	}
+
+	for _, e := range h.HoujinExecutive {
+		for _, v := range e {
+			if (v.Position == "代表取締役" || v.Position == "代表理事" || v.Position == "代表社員" || v.Position == "会長" || v.Position == "代表役員" || v.Position == "代表者" || v.Position == "理事長" || v.Position == "会頭") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -198,17 +222,6 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
 			if (v.Position == "理事") && v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-	// 清算人が代表となる場合
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if (v.Position == "清算人") && v.IsValid {
 				res = append(res, v)
 			}
 		}
@@ -489,7 +502,8 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		}
 
 		if idx > 0 {
-			if evsArr[idx-1].Name == evs.Name {
+			// 同じ氏名、役職の役員が連続している場合、前の役員を無効にする
+			if evsArr[idx-1].Name == evs.Name && evsArr[idx-1].Position == evs.Position {
 				evsArr[idx-1].IsValid = false
 			}
 
@@ -512,7 +526,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		idx++
 		evsArr = append(evsArr, evs)
 	}
-	//fmt.Println(evsArr)
+	fmt.Println(evsArr)
 	return evsArr, nil
 
 }
