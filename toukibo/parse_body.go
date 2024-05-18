@@ -245,7 +245,8 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			// XXXXの氏/名称変更がある場合、その前の役員は無効にする
 			if strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏変更") ||
 				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏名変更") ||
-				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名称変更") {
+				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名称変更") ||
+				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名") {
 				evsArr[idx-1].IsValid = false
 			}
 
