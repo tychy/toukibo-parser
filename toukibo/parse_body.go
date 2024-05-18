@@ -518,7 +518,9 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		idx++
 		evsArr = append(evsArr, evs)
 	}
-	//fmt.Println(evsArr)
+	if debug {
+		fmt.Println(evsArr)
+	}
 	return evsArr, nil
 
 }
