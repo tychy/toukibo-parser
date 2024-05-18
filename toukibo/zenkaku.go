@@ -1,6 +1,8 @@
 package toukibo
 
-import "strings"
+import (
+	"strings"
+)
 
 const (
 	ZenkakuZero          = '０'
