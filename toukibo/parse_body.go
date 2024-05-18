@@ -17,285 +17,21 @@ const (
 	splitExecutive2 = "┃　　　　　　　　├─────────────────────────────────────┨"
 	splitExecutive3 = "┃　　　　　　　　├───────────────────────┴─────────────┨"
 	splitExecutive4 = "┃　　　　　　　　│　（特定社員）　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　┃ ┃　　　　　　　　├───────────────────────┬─────────────┨" // sample133を通すためのハック
+
+	trimExecutive1 = "┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨"
 )
-
-type HoujinValue struct {
-	Value      string
-	IsValid    bool
-	RegisterAt string
-}
-
-func (h *HoujinValue) String() string {
-	return fmt.Sprintf("value: %s, isValid: %v, registerAt: %s",
-		h.Value, h.IsValid, h.RegisterAt)
-}
-
-type HoujinValueArray []HoujinValue
-
-func (hva HoujinValueArray) String() string {
-	var b strings.Builder
-	for _, hv := range hva {
-		b.WriteString("{")
-		b.WriteString(hv.String())
-		b.WriteString("},")
-	}
-	return b.String()
-}
-
-type HoujinExecutiveValue struct {
-	one   string
-	two   string
-	three []string
-
-	Name       string
-	Position   string
-	Address    string
-	IsValid    bool
-	RegisterAt string
-	ResignedAt string
-}
-
-func (h *HoujinExecutiveValue) String() string {
-	return fmt.Sprintf("name: %s, position: %s, address: %s, isValid: %v, registerAt: %s, resignedAt: %s",
-		h.Name, h.Position, h.Address, h.IsValid, h.RegisterAt, h.ResignedAt)
-}
-
-type HoujinExecutiveValueArray []HoujinExecutiveValue
-
-func (hva HoujinExecutiveValueArray) String() string {
-	var b strings.Builder
-	for _, hv := range hva {
-		b.WriteString("{")
-		b.WriteString(hv.String())
-		b.WriteString("},")
-	}
-	return b.String()
-}
-
-type HoujinBody struct {
-	HoujinNumber       string
-	HoujinKaku         HoujinkakuType
-	HoujinName         HoujinValueArray
-	HoujinAddress      HoujinValueArray
-	HoujinKoukoku      string
-	HoujinCreatedAt    string
-	HoujinBankruptedAt string
-	HoujinDissolvedAt  string
-	HoujinCapital      HoujinValueArray
-	HoujinToukiRecord  HoujinValueArray
-	HoujinExecutive    []HoujinExecutiveValueArray
-}
-
-func (h *HoujinBody) String() string {
-	out := fmt.Sprintf("Body\n法人番号 : %s\n法人名  : %s\n法人住所 : %s\n公告   : %s\n成立年月日: %s\n解散年月日: %s\n資本金  : %s\n登記記録 : %s\n",
-		h.HoujinNumber,
-		h.HoujinName,
-		h.HoujinAddress,
-		h.HoujinKoukoku,
-		h.HoujinCreatedAt,
-		h.HoujinDissolvedAt,
-		h.HoujinCapital,
-		h.HoujinToukiRecord,
-	)
-	out += "役員  : \n"
-	for _, e := range h.HoujinExecutive {
-		out += "[" + e.String() + "],\n"
-	}
-	return out
-}
-
-func (h *HoujinBody) GetHoujinKaku() (HoujinkakuType, error) {
-	if len(h.HoujinName) == 0 {
-		return HoujinKakuUnknown, fmt.Errorf("not found houjin name")
-	}
-	for _, v := range h.HoujinName {
-		if v.IsValid {
-			return FindHoujinKaku(v.Value), nil
-		}
-	}
-	return HoujinKakuUnknown, fmt.Errorf("not found houjin name")
-}
-
-func (h *HoujinBody) ListHoujinExecutives() ([]HoujinExecutiveValue, error) {
-	if len(h.HoujinExecutive) == 0 {
-		if h.HoujinDissolvedAt != "" {
-			// 法人が解散していれば代表はいなくても良い
-			return []HoujinExecutiveValue{}, nil
-		}
-		return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
-	}
-
-	var res []HoujinExecutiveValue
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-	return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
-}
-
-func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) {
-	if len(h.HoujinExecutive) == 0 {
-		if h.HoujinDissolvedAt != "" {
-			// 法人が解散していれば代表はいなくても良い
-			return []HoujinExecutiveValue{}, nil
-		}
-		return []HoujinExecutiveValue{}, fmt.Errorf("not found representative")
-	}
-
-	var res []HoujinExecutiveValue
-	// 代表清算人が代表となる場合
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if (v.Position == "代表清算人") && v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-
-	// 清算人が代表となる場合
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if (v.Position == "清算人") && v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if (v.Position == "代表取締役" || v.Position == "代表理事" || v.Position == "代表社員" || v.Position == "会長" || v.Position == "代表役員" || v.Position == "代表者" || v.Position == "理事長" || v.Position == "会頭") && v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-
-	houjinKaku, err := h.GetHoujinKaku()
-	if err != nil {
-		return nil, err
-	}
-
-	// 特定目的会社、有限会社は取締役が代表となる
-	if houjinKaku == HoujinKakuYugen || houjinKaku == HoujinKakuTokuteiMokuteki {
-		var res []HoujinExecutiveValue
-		for _, e := range h.HoujinExecutive {
-			for _, v := range e {
-				if (v.Position == "取締役") && v.IsValid {
-					res = append(res, v)
-				}
-			}
-		}
-		if len(res) > 0 {
-			return res, nil
-		}
-	}
-
-	if houjinKaku == HoujinKakuGousi {
-		var res []HoujinExecutiveValue
-		for _, e := range h.HoujinExecutive {
-			for _, v := range e {
-				if (v.Position == "無限責任社員") && v.IsValid {
-					res = append(res, v)
-				}
-			}
-		}
-		if len(res) > 0 {
-			return res, nil
-		}
-	}
-
-	// 理事が代表となる場合
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if (v.Position == "理事") && v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-	// 監査役が代表となる場合
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if (v.Position == "監査役") && v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-	// 社員が代表となる場合
-	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if (v.Position == "社員") && v.IsValid {
-				res = append(res, v)
-			}
-		}
-	}
-	if len(res) > 0 {
-		return res, nil
-	}
-	return []HoujinExecutiveValue{}, fmt.Errorf("not found representative")
-}
 
 // revertで先に分割、複数行にまたがっているのを結合、それぞれの単位で値、登記日を取得する
 // [{value, valid, since}, ]
 // sinceの""は最初の登記
 func splitReverts(s string) []string {
 	revertPattern := fmt.Sprintf("%s|%s|%s|%s|%s", revert1, revert2, revert3, revert4, revert5)
-	re := regexp.MustCompile(revertPattern)
-	parts := re.Split(s, -1)
-	return parts
+	return regexp.MustCompile(revertPattern).Split(s, -1)
 }
 
 func splitExecutives(s string) []string {
 	pattern := fmt.Sprintf("%s|%s|%s|%s", splitExecutive1, splitExecutive2, splitExecutive3, splitExecutive4)
-	re := regexp.MustCompile(pattern)
-	parts := re.Split(s, -1)
-	return parts
-}
-
-func trimPattern(s, pattern string) string {
-	re := regexp.MustCompile(pattern)
-	return re.ReplaceAllString(s, "")
-}
-
-func trimChangeAndRegisterAt(s string) (string, string, string) {
-	// trim ┃　　　　　　　　│　　　　　　　　　平成３０年　７月３１日変更　　平成３０年　８月２７日登記┃
-	pattern := fmt.Sprintf("┃　*│　*([%s]+)変更　*([%s]+)登記　*┃", ZenkakuStringPattern, ZenkakuStringPattern)
-	regex := regexp.MustCompile(pattern)
-	matches := regex.FindStringSubmatch(s)
-	if len(matches) > 0 {
-		return trimPattern(s, pattern), trimAllSpace(matches[1]), trimAllSpace(matches[2])
-	}
-	return s, "", ""
-}
-
-func trimRegisterAt(s string) (string, string) {
-	// trim ┃事項　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　　平成２０年　７月２５日登記┃
-	pattern := fmt.Sprintf("┃[%s]+　*│　*([%s]+)(登記|移記)　*┃", ZenkakuStringPattern, ZenkakuStringPattern)
-	regex := regexp.MustCompile(pattern)
-	matches := regex.FindStringSubmatch(s)
-	if len(matches) > 0 {
-		return trimPattern(s, pattern), trimAllSpace(matches[1])
-	}
-	return s, ""
+	return regexp.MustCompile(pattern).Split(s, -1)
 }
 
 func getValue(s string) (string, error) {
@@ -326,19 +62,6 @@ func getResignedAt(s string) (string, error) {
 		return trimAllSpace(matches[1]), nil
 	}
 	return "", fmt.Errorf("failed to get resignedAt from %s", s)
-}
-
-func isRegisterd(s string) bool {
-	registerAt, err := getRegisterAt(s)
-	if err != nil {
-		return false
-	}
-	return registerAt != ""
-}
-
-func isResigned(s string) bool {
-	return strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") ||
-		strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任")
 }
 
 func GetHoujinValue(s string) (HoujinValueArray, error) {
@@ -398,27 +121,36 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 	regex := regexp.MustCompile(pattern)
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		return trimPattern(s, pattern), trimAllSpace(matches[1]), trimAllSpace(matches[2])
+		out := trimPattern(s, pattern)
+		pos := trimAllSpace(matches[1])
+		name := trimAllSpace(matches[2])
+
+		// 金額の記載がある場合、役員名から削除
+		name = trimPattern(name, fmt.Sprintf("金[%s]+万円全部履行", ZenkakuStringPattern))
+
+		// 「取締役・監査等」の場合、役職は「取締役・監査等委員」に変更
+		if pos == "取締役・監査等" {
+			pos += "委員"
+			name = trimPattern(name, "委員")
+		}
+		return out, pos, name
 	}
 
-	s, pos, name := getShain(s)
+	out, pos, name := getShain(s)
 	if pos != "" {
-		return s, pos, name
+		return out, pos, name
 	}
 
 	return s, "", ""
 }
 
-func isSpace(s string) bool {
-	return strings.TrimSpace(s) == ""
-}
+// ┃ * ┃ or ┃ * ┨ の中身を抽出
 func extractLines(s string) []string {
 	var res []string
-
 	cur := ""
 	for _, r := range s {
 		if r == '┃' || r == '┨' {
-			if !isSpace(cur) {
+			if len(cur) > 0 {
 				res = append(res, cur)
 			}
 			cur = ""
@@ -444,7 +176,7 @@ func getPartTwo(s string) (string, string) {
 	cur := ""
 	for _, r := range s {
 		if r == '│' || r == '├' {
-			return cur, s[len(cur)+3:]
+			return cur, s[len(cur)+3:] // 3は仕切りの大きさ
 		}
 		cur += string(r)
 	}
@@ -454,41 +186,43 @@ func getPartTwo(s string) (string, string) {
 func splitThree(s string) (string, string, string) {
 	partOne, remain := getPartOne(s)
 	partTwo, partThree := getPartTwo(remain)
-
 	return trimLeadingTrailingSpace(partOne), trimLeadingTrailingSpace(partTwo), trimLeadingTrailingSpace(partThree)
 }
 
 func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
-	trimPattern1 := "┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨"
-	s = trimPattern(s, trimPattern1)
+	if debug {
+		PrintBar()
+	}
 
+	s = trimPattern(s, trimExecutive1) // 必要のない仕切りを削除
 	parts := splitReverts(s)
-
 	evsArr := make(HoujinExecutiveValueArray, 0, len(parts))
+
 	var idx int
 	for _, p := range parts {
-		//PrintSlice(extractLines(p))
-		lines := extractLines(p)
+		if debug {
+			PrintSlice(extractLines(p))
+		}
+
 		evs := HoujinExecutiveValue{
 			IsValid: true,
 		}
-		for _, l := range lines {
-			one, two, three := splitThree(l)
-			evs.one += one
-			evs.two += two
-			evs.three = append(evs.three, three)
-		}
-		_, pos, name := getExecutiveNameAndPosition(evs.two)
-		name = trimPattern(name, fmt.Sprintf("金[%s]+万円全部履行", ZenkakuStringPattern))
-		if pos == "取締役・監査等" {
-			pos += "委員"
-			name = trimPattern(name, "委員")
+
+		var two string
+		var three []string
+		for _, l := range extractLines(p) {
+			_, b, c := splitThree(l)
+			two += b
+			three = append(three, c)
 		}
 
+		// 役員名、役職を取得
+		_, pos, name := getExecutiveNameAndPosition(two)
 		evs.Name = name
 		evs.Position = pos
 
-		for _, t := range evs.three {
+		// 登記日、辞任日を取得
+		for _, t := range three {
 			registerAt, _ := getRegisterAt(t)
 			resignedAt, _ := getResignedAt(t)
 
@@ -509,9 +243,9 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 			// sample 30, 89, 106用のハック
 			// XXXXの氏/名称変更がある場合、その前の役員は無効にする
-			if strings.Contains(strings.Join(evs.three, ""), evsArr[idx-1].Name+"の氏変更") ||
-				strings.Contains(strings.Join(evs.three, ""), evsArr[idx-1].Name+"の氏名変更") ||
-				strings.Contains(strings.Join(evs.three, ""), evsArr[idx-1].Name+"の名称変更") {
+			if strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏変更") ||
+				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏名変更") ||
+				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名称変更") {
 				evsArr[idx-1].IsValid = false
 			}
 
@@ -526,7 +260,9 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		idx++
 		evsArr = append(evsArr, evs)
 	}
-	//fmt.Println(evsArr)
+	if debug {
+		fmt.Println(evsArr)
+	}
 	return evsArr, nil
 
 }
@@ -688,7 +424,6 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 				continue
 			}
 
-			// PrintBar()
 			v, err := GetHoujinExecutiveValue(e)
 			if err != nil {
 				return err
@@ -697,7 +432,6 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		}
 		return nil
 	}
-
 	return nil
 }
 

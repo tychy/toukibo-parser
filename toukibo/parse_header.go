@@ -20,6 +20,7 @@ func (h *HoujinHeader) String() string {
 		h.CompanyAddress,
 	)
 }
+
 func ReadCreatedAt(s string) (time.Time, error) {
 	// 正規表現パターン: 全角数字で構成された日付と時刻
 	pattern := "([０-９]{2,4}／[０-９]{1,2}／[０-９]{1,2})　*([０-９]{1,2}：[０-９]{1,2})"
