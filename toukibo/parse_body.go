@@ -328,19 +328,6 @@ func getResignedAt(s string) (string, error) {
 	return "", fmt.Errorf("failed to get resignedAt from %s", s)
 }
 
-func isRegisterd(s string) bool {
-	registerAt, err := getRegisterAt(s)
-	if err != nil {
-		return false
-	}
-	return registerAt != ""
-}
-
-func isResigned(s string) bool {
-	return strings.Contains(s, "辞任") || strings.Contains(s, "退任") || strings.Contains(s, "死亡") ||
-		strings.Contains(s, "抹消") || strings.Contains(s, "廃止") || strings.Contains(s, "解任")
-}
-
 func GetHoujinValue(s string) (HoujinValueArray, error) {
 	parts := splitReverts(s)
 	res := make(HoujinValueArray, len(parts))
@@ -459,15 +446,20 @@ func splitThree(s string) (string, string, string) {
 }
 
 func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
+	if debug {
+		PrintBar()
+	}
+
 	trimPattern1 := "┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨"
 	s = trimPattern(s, trimPattern1)
-
 	parts := splitReverts(s)
-
 	evsArr := make(HoujinExecutiveValueArray, 0, len(parts))
+
 	var idx int
 	for _, p := range parts {
-		//PrintSlice(extractLines(p))
+		if debug {
+			PrintSlice(extractLines(p))
+		}
 		lines := extractLines(p)
 		evs := HoujinExecutiveValue{
 			IsValid: true,
@@ -688,7 +680,6 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 				continue
 			}
 
-			// PrintBar()
 			v, err := GetHoujinExecutiveValue(e)
 			if err != nil {
 				return err
@@ -697,7 +688,6 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		}
 		return nil
 	}
-
 	return nil
 }
 
