@@ -17,6 +17,8 @@ const (
 	splitExecutive2 = "┃　　　　　　　　├─────────────────────────────────────┨"
 	splitExecutive3 = "┃　　　　　　　　├───────────────────────┴─────────────┨"
 	splitExecutive4 = "┃　　　　　　　　│　（特定社員）　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　┃ ┃　　　　　　　　├───────────────────────┬─────────────┨" // sample133を通すためのハック
+
+	trimExecutive1 = "┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨"
 )
 
 // revertで先に分割、複数行にまたがっているのを結合、それぞれの単位で値、登記日を取得する
@@ -24,16 +26,12 @@ const (
 // sinceの""は最初の登記
 func splitReverts(s string) []string {
 	revertPattern := fmt.Sprintf("%s|%s|%s|%s|%s", revert1, revert2, revert3, revert4, revert5)
-	re := regexp.MustCompile(revertPattern)
-	parts := re.Split(s, -1)
-	return parts
+	return regexp.MustCompile(revertPattern).Split(s, -1)
 }
 
 func splitExecutives(s string) []string {
 	pattern := fmt.Sprintf("%s|%s|%s|%s", splitExecutive1, splitExecutive2, splitExecutive3, splitExecutive4)
-	re := regexp.MustCompile(pattern)
-	parts := re.Split(s, -1)
-	return parts
+	return regexp.MustCompile(pattern).Split(s, -1)
 }
 
 func getValue(s string) (string, error) {
@@ -123,27 +121,36 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 	regex := regexp.MustCompile(pattern)
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		return trimPattern(s, pattern), trimAllSpace(matches[1]), trimAllSpace(matches[2])
+		out := trimPattern(s, pattern)
+		pos := trimAllSpace(matches[1])
+		name := trimAllSpace(matches[2])
+
+		// 金額の記載がある場合、役員名から削除
+		name = trimPattern(name, fmt.Sprintf("金[%s]+万円全部履行", ZenkakuStringPattern))
+
+		// 「取締役・監査等」の場合、役職は「取締役・監査等委員」に変更
+		if pos == "取締役・監査等" {
+			pos += "委員"
+			name = trimPattern(name, "委員")
+		}
+		return out, pos, name
 	}
 
-	s, pos, name := getShain(s)
+	out, pos, name := getShain(s)
 	if pos != "" {
-		return s, pos, name
+		return out, pos, name
 	}
 
 	return s, "", ""
 }
 
-func isSpace(s string) bool {
-	return strings.TrimSpace(s) == ""
-}
+// ┃ * ┃ or ┃ * ┨ の中身を抽出
 func extractLines(s string) []string {
 	var res []string
-
 	cur := ""
 	for _, r := range s {
 		if r == '┃' || r == '┨' {
-			if !isSpace(cur) {
+			if len(cur) > 0 {
 				res = append(res, cur)
 			}
 			cur = ""
@@ -169,7 +176,7 @@ func getPartTwo(s string) (string, string) {
 	cur := ""
 	for _, r := range s {
 		if r == '│' || r == '├' {
-			return cur, s[len(cur)+3:]
+			return cur, s[len(cur)+3:] // 3は仕切りの大きさ
 		}
 		cur += string(r)
 	}
@@ -179,7 +186,6 @@ func getPartTwo(s string) (string, string) {
 func splitThree(s string) (string, string, string) {
 	partOne, remain := getPartOne(s)
 	partTwo, partThree := getPartTwo(remain)
-
 	return trimLeadingTrailingSpace(partOne), trimLeadingTrailingSpace(partTwo), trimLeadingTrailingSpace(partThree)
 }
 
@@ -188,8 +194,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		PrintBar()
 	}
 
-	trimPattern1 := "┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨"
-	s = trimPattern(s, trimPattern1)
+	s = trimPattern(s, trimExecutive1) // 必要のない仕切りを削除
 	parts := splitReverts(s)
 	evsArr := make(HoujinExecutiveValueArray, 0, len(parts))
 
@@ -198,27 +203,26 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		if debug {
 			PrintSlice(extractLines(p))
 		}
-		lines := extractLines(p)
+
 		evs := HoujinExecutiveValue{
 			IsValid: true,
 		}
-		for _, l := range lines {
-			one, two, three := splitThree(l)
-			evs.one += one
-			evs.two += two
-			evs.three = append(evs.three, three)
-		}
-		_, pos, name := getExecutiveNameAndPosition(evs.two)
-		name = trimPattern(name, fmt.Sprintf("金[%s]+万円全部履行", ZenkakuStringPattern))
-		if pos == "取締役・監査等" {
-			pos += "委員"
-			name = trimPattern(name, "委員")
+
+		var two string
+		var three []string
+		for _, l := range extractLines(p) {
+			_, b, c := splitThree(l)
+			two += b
+			three = append(three, c)
 		}
 
+		// 役員名、役職を取得
+		_, pos, name := getExecutiveNameAndPosition(two)
 		evs.Name = name
 		evs.Position = pos
 
-		for _, t := range evs.three {
+		// 登記日、辞任日を取得
+		for _, t := range three {
 			registerAt, _ := getRegisterAt(t)
 			resignedAt, _ := getResignedAt(t)
 
@@ -239,9 +243,9 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 			// sample 30, 89, 106用のハック
 			// XXXXの氏/名称変更がある場合、その前の役員は無効にする
-			if strings.Contains(strings.Join(evs.three, ""), evsArr[idx-1].Name+"の氏変更") ||
-				strings.Contains(strings.Join(evs.three, ""), evsArr[idx-1].Name+"の氏名変更") ||
-				strings.Contains(strings.Join(evs.three, ""), evsArr[idx-1].Name+"の名称変更") {
+			if strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏変更") ||
+				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏名変更") ||
+				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名称変更") {
 				evsArr[idx-1].IsValid = false
 			}
 

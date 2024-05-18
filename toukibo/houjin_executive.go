@@ -6,10 +6,6 @@ import (
 )
 
 type HoujinExecutiveValue struct {
-	one   string
-	two   string
-	three []string
-
 	Name       string
 	Position   string
 	Address    string
