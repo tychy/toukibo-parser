@@ -329,6 +329,18 @@ func (h *HoujinBody) ConsumeHoujinCreatedAt(s string) bool {
 	return false
 }
 
+func (h *HoujinBody) ConsumeHoujinBankruptedAt(s string) bool {
+	pattern := fmt.Sprintf("┃破　産　*│　*([%s]+日)([%s]*)", ZenkakuStringPattern, ZenkakuStringPattern)
+	regex := regexp.MustCompile(pattern)
+
+	matches := regex.FindStringSubmatch(s)
+	if len(matches) > 0 {
+		h.HoujinBankruptedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
+		return true
+	}
+	return false
+}
+
 func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 	// ex 北海道知事の命令により解散
 	// ex 会社法４７２条第１項の規定により解散
@@ -343,13 +355,14 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 	return false
 }
 
-func (h *HoujinBody) ConsumeHoujinBankruptedAt(s string) bool {
-	pattern := fmt.Sprintf("┃破　産　*│　*([%s]+日)([%s]*)", ZenkakuStringPattern, ZenkakuStringPattern)
+func (h *HoujinBody) ConsumeHoujinContinuedAt(s string) bool {
+	// ex 令和2年7月1日会社継続
+	pattern := fmt.Sprintf("┃会社継続　*│　*([%s]+日)会社継続", ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)
 
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		h.HoujinBankruptedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
+		h.HoujinContinuedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
 		return true
 	}
 	return false
@@ -399,6 +412,9 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		return nil
 	}
 	if h.ConsumeHoujinDissolvedAt(s) {
+		return nil
+	}
+	if h.ConsumeHoujinContinuedAt(s) {
 		return nil
 	}
 	if h.ConsumeHoujinCapital(s) {

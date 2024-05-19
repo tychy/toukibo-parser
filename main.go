@@ -41,6 +41,7 @@ func main() {
 	fmt.Println("HoujinCreatedAt: " + h.GetHoujinCreatedAt())
 	fmt.Println("HoujinBankruptedAt: " + h.GetHoujinBankruptedAt())
 	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())
+	fmt.Println("HoujinContinuedAt: " + h.GetHoujinContinuedAt())
 	return
 }
 

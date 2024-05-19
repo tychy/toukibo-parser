@@ -1,5 +1,5 @@
 #!/bin/bash
-NUM_SAMPLE=200
+NUM_SAMPLE=450
 
 SKIP_SAMPLES=(674)
 
