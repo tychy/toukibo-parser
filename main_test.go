@@ -19,6 +19,7 @@ type TestData struct {
 	HoujinCreatedAt           string   `yaml:"HoujinCreatedAt"`
 	HoujinBankruptedAt        string   `yaml:"HoujinBankruptedAt"`
 	HoujinDissolvedAt         string   `yaml:"HoujinDissolvedAt"`
+	HoujinContinuedAt         string   `yaml:"HoujinContinuedAt"`
 }
 
 func TestToukiboParser(t *testing.T) {
@@ -105,7 +106,9 @@ func TestToukiboParser(t *testing.T) {
 			if h.GetHoujinDissolvedAt() != td.HoujinDissolvedAt {
 				t.Fatalf("dissolved_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinDissolvedAt, h.GetHoujinDissolvedAt())
 			}
-
+			if h.GetHoujinContinuedAt() != td.HoujinContinuedAt {
+				t.Fatalf("continued_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinContinuedAt, h.GetHoujinContinuedAt())
+			}
 		})
 	}
 }

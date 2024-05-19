@@ -96,6 +96,10 @@ func (h *Houjin) GetHoujinDissolvedAt() string {
 	return h.body.HoujinDissolvedAt
 }
 
+func (h *Houjin) GetHoujinContinuedAt() string {
+	return h.body.HoujinContinuedAt
+}
+
 func (h *Houjin) GetHoujinCapital() int {
 	for _, v := range h.body.HoujinCapital {
 		if v.IsValid {
