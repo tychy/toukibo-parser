@@ -84,6 +84,8 @@ func normalizeKanji(input string) string {
 			sb.WriteRune('徽')
 		case 61033:
 			sb.WriteRune('聰')
+		case 60059:
+			sb.WriteRune('芦')
 		default:
 			sb.WriteRune(r)
 		}
