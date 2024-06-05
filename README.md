@@ -3,23 +3,20 @@
 
 ## 動作イメージ
 ```
- % make run/sample TARGET=sample2.pdf
-go run main.go -path=sample2
-Header
-PDF作成日時: 2021-03-29 17:58:00 +0000 UTC
-商号: ****株式会社  
-本店住所: ****
-
-Body
-法人番号 : 0500-01-*****
-法人名  : {value: ****, isValid: true, registerAt: },
-法人住所 : {value: ****, isValid: true, registerAt: },
-公告   : 官報に掲載してする
-成立年月日: 昭和**年*月*日
-資本金  : {value: 金****万円, isValid: true, registerAt: },
-登記記録 : {value: 平成元年法務省令第１５号附則第３項の規定により, isValid: true, registerAt: 平成**年**月**日},
-役員   : [{name: ****, position: 取締役, address: , isValid: true, registerAt: 平成**年**月**日, resignedAt: },],
-[{name: ****, position: 代表取締役, address: ****, isValid: false, registerAt: 平成**年**月**日, resignedAt: },{name: ****, position: 代表取締役, address: ****, isValid: true, registerAt: 平成**年**月**日, resignedAt: },],
+ % make run TARGET=<PDFのパス>
+mkdir -p bin
+go build -o bin/toukibo-parser main.go
+./bin/toukibo-parser -path="testdata/pdf/sample1.pdf"
+HoujinKaku: 株式会社
+HoujinName: 株式会社近畿商事
+HoujinAddress: 東京都Sample区Sample１丁目１番地１
+HoujinExecutiveNames: [大門十三,壹岐正]
+HoujinRepresentativeNames: [壹岐正]
+HoujinCapital:  1000000
+HoujinCreatedAt: 令和3年1月6日
+HoujinBankruptedAt: 
+HoujinDissolvedAt: 
+HoujinContinuedAt: 
 ```
 
 ## テストを実行する場合
