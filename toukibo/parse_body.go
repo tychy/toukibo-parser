@@ -306,7 +306,10 @@ func (h *HoujinBody) ConsumeHoujinKoukoku(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinCapital(s string) bool {
-	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額") || strings.Contains(s, "出資の総額") || strings.Contains(s, "資産の総額") || strings.Contains(s, "基本財産の総額") || strings.Contains(s, "特定資本の額") || strings.Contains(s, "資本金")
+	return strings.Contains(s, "資本金の額") || strings.Contains(s, "払込済出資総額") || strings.Contains(s, "出資の総額") ||
+		strings.Contains(s, "資産の総額") || strings.Contains(s, "基本財産の総額") || strings.Contains(s, "特定資本の額") ||
+		strings.Contains(s, "資本金") ||
+		strings.Contains(s, "払い込んだ出資の") // sample 520用のハック
 }
 
 func (h *HoujinBody) ConsumeHoujinToukiRecord(s string) bool {
