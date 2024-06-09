@@ -55,7 +55,7 @@ func getRegisterAt(s string) (string, error) {
 }
 
 func getResignedAt(s string) (string, error) {
-	pattern := fmt.Sprintf(`([%s]+)　*(辞任|退任|死亡|抹消|廃止|解任)`, ZenkakuStringPattern)
+	pattern := fmt.Sprintf(`([%s]+)　*(辞任|退任|死亡|抹消|廃止|解任|退社)`, ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
