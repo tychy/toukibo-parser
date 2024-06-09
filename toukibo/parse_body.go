@@ -127,6 +127,7 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 
 		// 金額の記載がある場合、役員名から削除
 		name = trimPattern(name, fmt.Sprintf("金[%s]+万円全部履行", ZenkakuStringPattern))
+		name = trimPattern(name, fmt.Sprintf("金[%s]+円", ZenkakuStringPattern))
 
 		// 「取締役・監査等」の場合、役職は「取締役・監査等委員」に変更
 		if pos == "取締役・監査等" {
