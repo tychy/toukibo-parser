@@ -156,7 +156,7 @@ func Parse(input string) (*Houjin, error) {
 	houjinKakuType := FindHoujinKaku(houjinHeader.CompanyName)
 	// 宗教法人は、法人名に法人格が含まれない場合がある
 	if houjinKakuType == HoujinKakuUnknown {
-		if strings.Contains(s, "宗教法人") {
+		if strings.Contains(s, "宗教法人") || strings.Contains(s, "境内建物、境内地") {
 			houjinBody.HoujinKaku = HoujinKakuShukyo
 		}
 	} else {
