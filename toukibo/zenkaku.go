@@ -15,6 +15,7 @@ const (
 	ZenkakuColon         = '：'
 	ZenkakuSlash         = '／'
 	ZenkakuHyphen        = '－'
+	ZenkakuNumberPattern = `０-９`
 	ZenkakuStringPattern = `\p{Han}\p{Hiragana}\p{Katakana}Ａ-Ｚａ-ｚ０-９A-Za-z0-9＆’，‐．・ー\s　。－、：／`
 )
 
