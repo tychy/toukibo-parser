@@ -126,8 +126,8 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 		name := trimAllSpace(matches[2])
 
 		// 金額の記載がある場合、役員名から削除
-		name = trimPattern(name, fmt.Sprintf("金[%s]+円全部履行", ZenkakuStringPattern))
-		name = trimPattern(name, fmt.Sprintf("金[%s]+円", ZenkakuStringPattern)) // sample519用のハック
+		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)全部履行", ZenkakuNumberPattern))
+		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)", ZenkakuNumberPattern)) // sample519用のハック
 
 		// 「取締役・監査等」の場合、役職は「取締役・監査等委員」に変更
 		if pos == "取締役・監査等" {
@@ -140,8 +140,8 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 	out, pos, name := getShain(s)
 	if pos != "" {
 		// 金額の記載がある場合、役員名から削除
-		name = trimPattern(name, fmt.Sprintf("金[%s]+円全部履行", ZenkakuStringPattern))
-		name = trimPattern(name, fmt.Sprintf("金[%s]+円", ZenkakuStringPattern)) // sample519用のハック
+		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)全部履行", ZenkakuNumberPattern))
+		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)", ZenkakuNumberPattern)) // sample519用のハック
 
 		return out, pos, name
 	}
