@@ -49,7 +49,7 @@ func normalizeKanji(input string) string {
 	var sb strings.Builder
 	for _, r := range input {
 		switch r {
-		case 57451:
+		case 57451, 57510:
 			sb.WriteRune('塚')
 		case 57735:
 			sb.WriteRune('西')
