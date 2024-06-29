@@ -113,8 +113,12 @@ func (h *Houjin) GetHoujinCapital() int {
 	return 0
 }
 
-func (h *Houjin) ListHoujinExecutives() ([]string, error) {
-	execs, err := h.body.ListHoujinExecutives()
+func (h *Houjin) GetHoujinExecutives() (HoujinExecutiveValueArray, error) {
+	return h.body.GetHoujinExecutives()
+}
+
+func (h *Houjin) GetHoujinExecutiveNames() ([]string, error) {
+	execs, err := h.body.GetHoujinExecutives()
 	if err != nil {
 		return nil, err
 	}

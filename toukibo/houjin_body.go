@@ -47,7 +47,7 @@ func (h *HoujinBody) GetHoujinKaku() (HoujinkakuType, error) {
 	return HoujinKakuUnknown, fmt.Errorf("not found houjin name")
 }
 
-func (h *HoujinBody) ListHoujinExecutives() ([]HoujinExecutiveValue, error) {
+func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
 	if len(h.HoujinExecutive) == 0 {
 		if h.HoujinDissolvedAt != "" {
 			// 法人が解散していれば代表はいなくても良い
