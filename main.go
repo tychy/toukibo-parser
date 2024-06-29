@@ -27,7 +27,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	execNames, err := h.ListHoujinExecutives()
+	execs, err := h.GetHoujinExecutives()
+	if err != nil {
+		panic(err)
+	}
+
+	execNames, err := h.GetHoujinExecutiveNames()
 	if err != nil {
 		panic(err)
 	}
@@ -35,6 +40,7 @@ func main() {
 	fmt.Println("HoujinKaku: " + h.GetHoujinKaku())
 	fmt.Println("HoujinName: " + h.GetHoujinName())
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
+	fmt.Print("HoujinExecutiveValues: \n" + execs.String())
 	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
 	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")
 	fmt.Println("HoujinCapital: ", h.GetHoujinCapital())

@@ -6,8 +6,8 @@ import (
 )
 
 type HoujinExecutiveValue struct {
-	Name       string
-	Position   string
+	Name       string `yaml:"Name"`
+	Position   string `yaml:"Position"`
 	Address    string
 	IsValid    bool
 	RegisterAt string
@@ -24,9 +24,8 @@ type HoujinExecutiveValueArray []HoujinExecutiveValue
 func (hva HoujinExecutiveValueArray) String() string {
 	var b strings.Builder
 	for _, hv := range hva {
-		b.WriteString("{")
-		b.WriteString(hv.String())
-		b.WriteString("},")
+		b.WriteString("  - Name: " + hv.Name + "\n")
+		b.WriteString("    Position: " + hv.Position + "\n")
 	}
 	return b.String()
 }

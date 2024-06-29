@@ -10,16 +10,17 @@ import (
 )
 
 type TestData struct {
-	HoujinKaku                string   `yaml:"HoujinKaku"`
-	HoujinName                string   `yaml:"HoujinName"`
-	HoujinAddress             string   `yaml:"HoujinAddress"`
-	HoujinExecutiveNames      []string `yaml:"HoujinExecutiveNames"`
-	HoujinRepresentativeNames []string `yaml:"HoujinRepresentativeNames"`
-	HoujinCapital             string   `yaml:"HoujinCapital"`
-	HoujinCreatedAt           string   `yaml:"HoujinCreatedAt"`
-	HoujinBankruptedAt        string   `yaml:"HoujinBankruptedAt"`
-	HoujinDissolvedAt         string   `yaml:"HoujinDissolvedAt"`
-	HoujinContinuedAt         string   `yaml:"HoujinContinuedAt"`
+	HoujinKaku                string                         `yaml:"HoujinKaku"`
+	HoujinName                string                         `yaml:"HoujinName"`
+	HoujinAddress             string                         `yaml:"HoujinAddress"`
+	HoujinExecutiveValues     []toukibo.HoujinExecutiveValue `yaml:"HoujinExecutiveValues"`
+	HoujinExecutiveNames      []string                       `yaml:"HoujinExecutiveNames"`
+	HoujinRepresentativeNames []string                       `yaml:"HoujinRepresentativeNames"`
+	HoujinCapital             string                         `yaml:"HoujinCapital"`
+	HoujinCreatedAt           string                         `yaml:"HoujinCreatedAt"`
+	HoujinBankruptedAt        string                         `yaml:"HoujinBankruptedAt"`
+	HoujinDissolvedAt         string                         `yaml:"HoujinDissolvedAt"`
+	HoujinContinuedAt         string                         `yaml:"HoujinContinuedAt"`
 }
 
 func TestToukiboParser(t *testing.T) {
@@ -62,8 +63,26 @@ func TestToukiboParser(t *testing.T) {
 				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s,", td.HoujinAddress, h.GetHoujinAddress())
 			}
 
+			// Exec
+			execs, err := h.GetHoujinExecutives()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(execs) != len(td.HoujinExecutiveValues) {
+				t.Fatalf("executive count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinExecutiveValues), len(execs))
+			}
+			for i, v := range execs {
+				if v.Name != td.HoujinExecutiveValues[i].Name {
+					t.Fatalf("executive name is not match,\nwant : %s,\ngot  : %s", td.HoujinExecutiveValues[i].Name, v.Name)
+				}
+				if v.Position != td.HoujinExecutiveValues[i].Position {
+					t.Fatalf("executive position is not match,\nwant : %s,\ngot  : %s", td.HoujinExecutiveValues[i].Position, v.Position)
+				}
+			}
+
 			// ExecutiveNames
-			execNames, err := h.ListHoujinExecutives()
+			execNames, err := h.GetHoujinExecutiveNames()
 			if err != nil {
 				t.Fatal(err)
 			}
