@@ -352,12 +352,22 @@ func (h *HoujinBody) ConsumeHoujinBankruptedAt(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
+	if !strings.Contains(s, "┃解　散") {
+		return false
+	}
+
+	var s2 string
+	for _, p := range extractLines(s) {
+		_, b, _ := splitThree(p)
+		s2 += b
+	}
+
 	// ex 北海道知事の命令により解散
 	// ex 会社法４７２条第１項の規定により解散
-	pattern := fmt.Sprintf("┃解　散　*│　*([%s]+日)([%s]*)により解散", ZenkakuStringPattern, ZenkakuStringPattern)
+	pattern := fmt.Sprintf("([%s]+日)([%s]*)により解散", ZenkakuStringPattern, ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)
 
-	matches := regex.FindStringSubmatch(s)
+	matches := regex.FindStringSubmatch(s2)
 	if len(matches) > 0 {
 		h.HoujinDissolvedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
 		return true
