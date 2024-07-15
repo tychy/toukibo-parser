@@ -19,6 +19,10 @@ const (
 	splitExecutive4 = "┃　　　　　　　　│　（特定社員）　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　┃ ┃　　　　　　　　├───────────────────────┬─────────────┨" // sample133を通すためのハック
 
 	trimExecutive1 = "┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨"
+
+	positionsPattern = "代表取締役|取締役・監査等|取締役|監査役|会計監査人|代表理事|理事長|理事|監事|代表社員|" +
+		"業務執行社員|会長|代表清算人|清算人|代表役員|会計参与|無限責任社員|有限責任社員|破産管財人|評議員|代表者|" +
+		"会頭|学長|代表執行役|執行役|報酬委員|監査委員|指名委員"
 )
 
 // revertで先に分割、複数行にまたがっているのを結合、それぞれの単位で値、登記日を取得する
@@ -115,45 +119,66 @@ func getShain(s string) (string, string, string) {
 	return s, "", ""
 }
 
-func getExecutiveNameAndPosition(s string) (string, string, string) {
-	positions := "代表取締役|取締役・監査等|取締役|監査役|会計監査人|代表理事|理事長|理事|監事|代表社員|" +
-		"業務執行社員|会長|代表清算人|清算人|代表役員|会計参与|無限責任社員|有限責任社員|破産管財人|評議員|代表者|" +
-		"会頭|学長|代表執行役|執行役|報酬委員|監査委員|指名委員"
-	pattern := fmt.Sprintf("(%s)　*([%s]+)", positions, ZenkakuStringPattern)
-	regex := regexp.MustCompile(pattern)
-	matches := regex.FindStringSubmatch(s)
-	if len(matches) > 0 {
-		out := trimPattern(s, pattern)
-		pos := trimAllSpace(matches[1])
-		name := trimAllSpace(matches[2])
+func normalizeExecutiveName(s string) string {
+	name := trimAllSpace(s)
+	// 金額の記載がある場合、役員名から削除
+	name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)全部履行", ZenkakuNumberPattern))
+	name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)", ZenkakuNumberPattern)) // sample519用のハック
 
-		// 金額の記載がある場合、役員名から削除
-		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)全部履行", ZenkakuNumberPattern))
-		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)", ZenkakuNumberPattern)) // sample519用のハック
+	// 生年月日の記載がある場合は削除
+	// NOTE: 取締役に同姓同名の別人がいる場合は、例外的に生年月日が登記される
+	name = trimPattern(name, "(大正|昭和|平成|令和)[0-9０-９]+年[0-9０-９]+月[0-9０-９]+日生")
+	return name
+}
 
-		// 生年月日の記載がある場合は削除
-		// NOTE: 取締役に同姓同名の別人がいる場合は、例外的に生年月日が登記される
-		name = trimPattern(name, "(大正|昭和|平成|令和)[0-9０-９]+年[0-9０-９]+月[0-9０-９]+日生")
+func getMultipleExecutiveNamesAndPositions(s string) (result []struct{ Name, Position string }, three []string) {
+	var onNameAndPos bool
+	for _, l := range extractLines(s) {
+		_, remain := getPartOne(l)
+		b, c := getPartTwo(remain)
+		three = append(three, c)
 
-		// 「取締役・監査等」の場合、役職は「取締役・監査等委員」に変更
-		if pos == "取締役・監査等" {
-			pos += "委員"
-			name = trimPattern(name, "委員")
+		if regexp.MustCompile("^　*$").MatchString(b) {
+			// 空行挟んで名前や役職が続く場合があるため、何もせずにスキップ
+			continue
 		}
 
-		return out, pos, name
+		if onNameAndPos {
+			// 前の行に役職 + 名前が記述されていた場合
+
+			// NOTE: 役職が「取締役・監査等委員」の場合は、役職部分が2行にまたがる
+			if result[len(result)-1].Position == "取締役・監査等" && strings.HasPrefix(b, "　委員") {
+				result[len(result)-1].Name += trimLeadingTrailingSpace(strings.TrimPrefix(b, "　委員"))
+				result[len(result)-1].Position += "委員"
+				continue
+			}
+
+			// 字下げされている場合は、名前の続きとして扱う
+			if strings.HasPrefix(b, "　　") {
+				result[len(result)-1].Name += trimLeadingTrailingSpace(b)
+				continue
+			}
+
+			onNameAndPos = false
+		}
+		if match := regexp.MustCompile(fmt.Sprintf("(%s)　+([%s]+)", positionsPattern, ZenkakuStringPattern)).FindStringSubmatch(b); len(match) == 3 {
+			// NOTE: 名前や役職が複数行にまたがる可能性があり、Name と Position は次行以降の内容も踏まえて確定させる必要がある
+			onNameAndPos = true
+			result = append(result, struct{ Name, Position string }{Name: trimAllSpace(match[2]), Position: trimAllSpace(match[1])})
+			continue
+		}
+
+		if _, pos, name := getShain(b); pos != "" {
+			result = append(result, struct{ Name, Position string }{Name: name, Position: pos})
+			continue
+		}
 	}
 
-	out, pos, name := getShain(s)
-	if pos != "" {
-		// 金額の記載がある場合、役員名から削除
-		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)全部履行", ZenkakuNumberPattern))
-		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)", ZenkakuNumberPattern)) // sample519用のハック
-
-		return out, pos, name
+	for i := 0; i < len(result); i++ {
+		result[i].Name = normalizeExecutiveName(result[i].Name)
 	}
 
-	return s, "", ""
+	return
 }
 
 // ┃ * ┃ or ┃ * ┨ の中身を抽出
@@ -220,18 +245,12 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			IsValid: true,
 		}
 
-		var two string
-		var three []string
-		for _, l := range extractLines(p) {
-			_, b, c := splitThree(l)
-			two += b
-			three = append(three, c)
-		}
-
 		// 役員名、役職を取得
-		_, pos, name := getExecutiveNameAndPosition(two)
-		evs.Name = name
-		evs.Position = pos
+		posAndNames, three := getMultipleExecutiveNamesAndPositions(p)
+		if len(posAndNames) > 0 {
+			evs.Name = posAndNames[0].Name
+			evs.Position = posAndNames[0].Position
+		}
 
 		// 登記日、辞任日を取得
 		for _, t := range three {
