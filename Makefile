@@ -27,9 +27,6 @@ annotate:
 
 annotate/all: build
 	./annotate-samples.sh
-# ちょっとおかしいもの
-# 133 住所が途中で切れている
-# 770 住所のパースがおかしい
 
 test: build
 	go test -coverprofile=coverage.out -shuffle=on ./...
