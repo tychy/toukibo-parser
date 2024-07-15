@@ -22,7 +22,7 @@ const (
 
 	positionsPattern = "代表取締役|取締役・監査等|取締役|監査役|会計監査人|代表理事|理事長|理事|監事|代表社員|" +
 		"業務執行社員|会長|代表清算人|清算人|代表役員|会計参与|無限責任社員|有限責任社員|破産管財人|評議員|代表者|" +
-		"会頭|学長|代表執行役|執行役|報酬委員|監査委員|指名委員"
+		"会頭|学長|代表執行役|執行役|報酬委員|監査委員|指名委員|職務執行者"
 )
 
 // revertで先に分割、複数行にまたがっているのを結合、それぞれの単位で値、登記日を取得する
@@ -241,56 +241,73 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			PrintSlice(extractLines(p))
 		}
 
-		evs := HoujinExecutiveValue{
-			IsValid: true,
-		}
+		var evs []HoujinExecutiveValue
 
 		// 役員名、役職を取得
 		posAndNames, three := getMultipleExecutiveNamesAndPositions(p)
-		if len(posAndNames) > 0 {
-			evs.Name = posAndNames[0].Name
-			evs.Position = posAndNames[0].Position
+		for _, posAndName := range posAndNames {
+			ev := HoujinExecutiveValue{
+				IsValid:  true,
+				Name:     posAndName.Name,
+				Position: posAndName.Position,
+			}
+			evs = append(evs, ev)
 		}
 
 		// 登記日、辞任日を取得
+		var registerAt, resignedAt string
 		for _, t := range three {
-			registerAt, _ := getRegisterAt(t)
-			resignedAt, _ := getResignedAt(t)
-
-			if registerAt != "" {
-				evs.RegisterAt = registerAt
+			if at, _ := getRegisterAt(t); at != "" {
+				registerAt = at
 			}
-			if resignedAt != "" {
-				evs.ResignedAt = resignedAt
-				evs.IsValid = false
+			if at, _ := getResignedAt(t); at != "" {
+				resignedAt = at
+			}
+		}
+		if registerAt != "" {
+			for i := range evs {
+				evs[i].RegisterAt = registerAt
+			}
+		}
+		if resignedAt != "" {
+			for i := range evs {
+				evs[i].ResignedAt = resignedAt
+				evs[i].IsValid = false
 			}
 		}
 
 		if idx > 0 {
-			// 同じ氏名、役職の役員が連続している場合、前の役員を無効にする
-			if evsArr[idx-1].Name == evs.Name && evsArr[idx-1].Position == evs.Position {
-				evsArr[idx-1].IsValid = false
-			}
-
-			// sample 30, 89, 106用のハック
-			// XXXXの氏/名称変更がある場合、その前の役員は無効にする
-			if strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏変更") ||
-				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏名変更") ||
-				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名称変更") ||
-				strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名") {
-				evsArr[idx-1].IsValid = false
-			}
-
-			if evs.Name == "" {
-				evsArr[idx-1].IsValid = evs.IsValid
-				evsArr[idx-1].ResignedAt = evs.ResignedAt
-				evsArr[idx-1].RegisterAt = evs.RegisterAt
+			if len(evs) == 0 {
+				if registerAt != "" {
+					evsArr[idx-1].RegisterAt = registerAt
+				}
+				if registerAt != "" {
+					evsArr[idx-1].ResignedAt = resignedAt
+					evsArr[idx-1].IsValid = false
+				}
 				continue
+			}
+
+			// 簡単のために、一つの欄に複数の役員情報が記載されている場合は無効処理等をスキップしている
+			if len(evs) == 1 {
+				// 同じ氏名、役職の役員が連続している場合、前の役員を無効にする
+				if evsArr[idx-1].Name == evs[0].Name && evsArr[idx-1].Position == evs[0].Position {
+					evsArr[idx-1].IsValid = false
+				}
+
+				// sample 30, 89, 106用のハック
+				// XXXXの氏/名称変更がある場合、その前の役員は無効にする
+				if strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏変更") ||
+					strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏名変更") ||
+					strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名称変更") ||
+					strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名") {
+					evsArr[idx-1].IsValid = false
+				}
 			}
 		}
 
-		idx++
-		evsArr = append(evsArr, evs)
+		idx += len(evs)
+		evsArr = append(evsArr, evs...)
 	}
 	if debug {
 		fmt.Println(evsArr)
