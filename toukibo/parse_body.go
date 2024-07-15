@@ -131,11 +131,16 @@ func getExecutiveNameAndPosition(s string) (string, string, string) {
 		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)全部履行", ZenkakuNumberPattern))
 		name = trimPattern(name, fmt.Sprintf("金[%s]+(?:万円|円)", ZenkakuNumberPattern)) // sample519用のハック
 
+		// 生年月日の記載がある場合は削除
+		// NOTE: 取締役に同姓同名の別人がいる場合は、例外的に生年月日が登記される
+		name = trimPattern(name, "(大正|昭和|平成|令和)[0-9０-９]+年[0-9０-９]+月[0-9０-９]+日生")
+
 		// 「取締役・監査等」の場合、役職は「取締役・監査等委員」に変更
 		if pos == "取締役・監査等" {
 			pos += "委員"
 			name = trimPattern(name, "委員")
 		}
+
 		return out, pos, name
 	}
 
