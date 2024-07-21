@@ -22,7 +22,7 @@ HoujinContinuedAt:
 ## デモ
 [こちら](https://toukibo-parser-demo.tychy.jp/)のページでパーサーの性能をお試しいただくことが可能です。
 
-![デモ](https://github.com/tychy/toukibo_parser/parser-demo.jpg)
+![デモ](https://github.com/tychy/toukibo-parser/parser-demo.jpg)
 
 
 ## テストを実行する場合
