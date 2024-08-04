@@ -21,7 +21,7 @@ check:
 	make open/sample TARGET=$(TARGET)
 	make edit TARGET=$(TARGET)
 
-annotate:
+annotate: build
 	./bin/toukibo-parser -path="$(DATA_DIR)/pdf/$(TARGET).pdf" > $(DATA_DIR)/yaml/$(TARGET).yaml
 	make check TARGET=$(TARGET)
 

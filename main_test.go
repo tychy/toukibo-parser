@@ -24,7 +24,7 @@ type TestData struct {
 }
 
 func TestToukiboParser(t *testing.T) {
-	testCount := 901
+	testCount := 1039
 
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
@@ -38,6 +38,7 @@ func TestToukiboParser(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			yamlContent, err := os.ReadFile(yamlFileName)
 			if err != nil {
 				t.Fatal(err)
@@ -50,7 +51,6 @@ func TestToukiboParser(t *testing.T) {
 			}
 
 			// check
-
 			if h.GetHoujinKaku() != td.HoujinKaku {
 				t.Fatalf("kaku is not match,\nwant : %s,\ngot  : %s,", td.HoujinKaku, h.GetHoujinKaku())
 			}
