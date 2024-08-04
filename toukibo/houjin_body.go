@@ -36,15 +36,10 @@ func (h *HoujinBody) String() string {
 }
 
 func (h *HoujinBody) GetHoujinKaku() (HoujinkakuType, error) {
-	if len(h.HoujinName) == 0 {
-		return HoujinKakuUnknown, fmt.Errorf("not found houjin name")
+	if h.HoujinKaku == HoujinKakuUnknown {
+		return HoujinKakuUnknown, fmt.Errorf("not found houjin kaku")
 	}
-	for _, v := range h.HoujinName {
-		if v.IsValid {
-			return FindHoujinKaku(v.Value), nil
-		}
-	}
-	return HoujinKakuUnknown, fmt.Errorf("not found houjin name")
+	return h.HoujinKaku, nil
 }
 
 func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
