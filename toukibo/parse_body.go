@@ -435,7 +435,7 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		strings.Contains(s, "発行済株式の総数") || strings.Contains(s, "株式の譲渡制限") || strings.Contains(s, "株券を発行する旨") ||
 		strings.Contains(s, "取締役等の会社") || strings.Contains(s, "非業務執行取締役") ||
 		strings.Contains(s, "取締役会設置会社") || strings.Contains(s, "監査役設置会社") || strings.Contains(s, "会計監査人設置会") ||
-		strings.Contains(s, "地区") || strings.Contains(s, "解散の事由") || strings.Contains(s, "監査役会設置会社") ||
+		strings.Contains(s, "解散の事由") || strings.Contains(s, "監査役会設置会社") ||
 		strings.Contains(s, "地　区") || strings.Contains(s, "支　店") || strings.Contains(s, "従たる事務所") {
 		// skip
 		return nil
