@@ -24,7 +24,7 @@ type TestData struct {
 }
 
 func TestToukiboParser(t *testing.T) {
-	testCount := 797
+	testCount := 808
 
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
