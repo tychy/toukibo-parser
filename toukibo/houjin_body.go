@@ -99,6 +99,27 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 		return res, nil
 	}
 
+	// 破産管財人が代表となる場合
+	for _, e := range h.HoujinExecutive {
+		for _, v := range e {
+			if (v.Position == "破産管財人") && v.IsValid {
+				res = append(res, v)
+			}
+		}
+	}
+	if len(res) > 0 {
+		return res, nil
+	}
+	// 保全管財人が代表となる場合
+	// 今のところこのケースは見つけていないが、sample1047を見て必要だと判断
+	for _, e := range h.HoujinExecutive {
+		for _, v := range e {
+			if (v.Position == "保全管財人") && v.IsValid {
+				res = append(res, v)
+			}
+		}
+	}
+
 	for _, e := range h.HoujinExecutive {
 		for _, v := range e {
 			if (v.Position == "代表取締役" || v.Position == "代表理事" || v.Position == "代表社員" || v.Position == "会長" ||
