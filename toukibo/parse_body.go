@@ -2,7 +2,6 @@ package toukibo
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
 )
@@ -39,13 +38,20 @@ func splitExecutives(s string) []string {
 }
 
 func getValue(s string) (string, error) {
-	pattern := fmt.Sprintf(`([%s]+)　*│　*([%s]+)`, ZenkakuStringPattern, ZenkakuStringPattern)
-	regex := regexp.MustCompile(pattern)
-	matches := regex.FindStringSubmatch(s)
-	if len(matches) > 0 {
-		return strings.TrimSpace(matches[2]), nil
+	var value string
+	var three []string // 登記日など
+
+	for _, l := range extractLines(s) {
+		_, remain := getPartOne(l)
+		b, c := getPartTwo(remain)
+		value += trimLeadingTrailingSpace(b)
+		three = append(three, c)
+		if regexp.MustCompile("^　*$").MatchString(b) {
+			// 空行挟んで名前や役職が続く場合があるため、何もせずにスキップ
+			continue
+		}
 	}
-	return "", fmt.Errorf("failed to get value from %s", s)
+	return value, nil
 }
 
 func getRegisterAt(s string) (string, error) {
@@ -70,42 +76,34 @@ func getResignedAt(s string) (string, error) {
 
 func GetHoujinValue(s string) (HoujinValueArray, error) {
 	parts := splitReverts(s)
-	res := make(HoujinValueArray, len(parts))
-	for i, s := range parts {
+	va := make(HoujinValueArray, len(parts))
+
+	for idx, p := range parts {
+		// 役職以外の場合は、2行目に登記日が記載されている場合がある
+		// （役職の場合は右端の3行目に登記日が記載されている）
+		// したがって、先ににと登記日を掃除しておく
 		var registerAt string
-		s, _, registerAt = trimChangeAndRegisterAt(s)
+		p, _, registerAt = trimChangeAndRegisterAt(p)
 		if registerAt == "" {
-			s, registerAt = trimRegisterAt(s)
+			p, registerAt = trimRegisterAt(p)
 		}
 
-		isLast := i == len(parts)-1
-		value, err := getValue(s)
+		value, err := getValue(p)
 		if err != nil {
 			return nil, err
 		}
 
-		if i == 0 {
-			res[i] = HoujinValue{
-				Value:      value,
-				IsValid:    isLast,
-				RegisterAt: registerAt,
-			}
-		} else {
-			if registerAt == "" {
-				registerAt, err = getRegisterAt(s)
-				if err != nil {
-					// 登記が記載されていない場合無視する
-					slog.Debug(fmt.Sprintf("GetHoujinValue: failed to get registerAt from %s", parts[i]))
-				}
-			}
-			res[i] = HoujinValue{
-				Value:      value,
-				IsValid:    isLast,
-				RegisterAt: registerAt,
-			}
+		isLast := idx == len(parts)-1
+		v := HoujinValue{
+			Value:      value,
+			IsValid:    isLast,
+			RegisterAt: registerAt,
 		}
+
+		va[idx] = v
 	}
-	return res, nil
+
+	return va, nil
 }
 
 func getShain(s string) (string, string, string) {
@@ -483,6 +481,20 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 			return err
 		}
 		h.HoujinCapital = v
+
+		// sample126, sample508用のハック
+		// 金０円（債務超過額 金２８７３万８７５４円）のような場合、資本金は金0円とする
+
+		for i, v := range h.HoujinCapital {
+			if strings.Contains(v.Value, "債務超過額") {
+				pattern := fmt.Sprintf("金([%s]+)円", ZenkakuNumberPattern)
+				regex := regexp.MustCompile(pattern)
+				matches := regex.FindStringSubmatch(v.Value)
+				if len(matches) > 0 {
+					h.HoujinCapital[i].Value = "金" + matches[1] + "円"
+				}
+			}
+		}
 		return nil
 	}
 	if h.ConsumeHoujinToukiRecord(s) {
