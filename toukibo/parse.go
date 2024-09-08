@@ -80,6 +80,10 @@ func (h *Houjin) GetHoujinName() string {
 	return h.header.CompanyName
 }
 
+func (h *Houjin) GetHoujinNameHistory() HoujinValueArray {
+	return h.body.HoujinName
+}
+
 func (h *Houjin) GetHoujinAddress() string {
 	return h.header.CompanyAddress
 }
