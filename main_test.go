@@ -59,6 +59,11 @@ func TestToukiboParser(t *testing.T) {
 				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s,", td.HoujinName, h.GetHoujinName())
 			}
 
+			history := h.GetHoujinNameHistory()
+			if h.GetHoujinName() != history[len(history)-1].Value {
+				t.Fatalf("name is not match,\nwant : %s,\ngot  : %s,", td.HoujinName, history[0].Value)
+			}
+
 			if h.GetHoujinAddress() != td.HoujinAddress {
 				t.Fatalf("address is not match,\nwant : %s,\ngot  : %s,", td.HoujinAddress, h.GetHoujinAddress())
 			}
