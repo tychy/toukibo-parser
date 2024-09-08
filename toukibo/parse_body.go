@@ -280,8 +280,6 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			if len(evs) == 0 {
 				if registerAt != "" {
 					evsArr[idx-1].RegisterAt = registerAt
-				}
-				if registerAt != "" {
 					evsArr[idx-1].ResignedAt = resignedAt
 					evsArr[idx-1].IsValid = false
 				}
