@@ -117,6 +117,19 @@ func (h *Houjin) GetHoujinCapital() int {
 	return 0
 }
 
+func (h *Houjin) GetHoujinStock() int {
+	for _, v := range h.body.HoujinStock {
+		if v.IsValid {
+			res := v.Value
+			if len(res) < 1 {
+				return 0
+			}
+			return StockToNumber(v.Value)
+		}
+	}
+	return 0
+}
+
 func (h *Houjin) GetHoujinExecutives() (HoujinExecutiveValueArray, error) {
 	return h.body.GetHoujinExecutives()
 }

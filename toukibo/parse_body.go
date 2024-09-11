@@ -357,6 +357,10 @@ func (h *HoujinBody) ConsumeHoujinCapital(s string) bool {
 		strings.Contains(s, "払い込んだ出資の") // sample 520用のハック
 }
 
+func (h *HoujinBody) ConsumeHoujinStock(s string) bool {
+	return strings.Contains(s, "発行済株式の総数")
+}
+
 func (h *HoujinBody) ConsumeHoujinToukiRecord(s string) bool {
 	return strings.Contains(s, "登記記録に関する")
 }
@@ -429,7 +433,7 @@ func (h *HoujinBody) ConsumeHoujinContinuedAt(s string) bool {
 func (h *HoujinBody) ParseBodyMain(s string) error {
 	if strings.Contains(s, "発行可能株式総数") || strings.Contains(s, "┃目　的") || strings.Contains(s, "┃目的等") ||
 		strings.Contains(s, "出資１口の金額") || strings.Contains(s, "出資の総口数") || strings.Contains(s, "出資払込の方法") ||
-		strings.Contains(s, "発行済株式の総数") || strings.Contains(s, "株式の譲渡制限") || strings.Contains(s, "株券を発行する旨") ||
+		strings.Contains(s, "株式の譲渡制限") || strings.Contains(s, "株券を発行する旨") ||
 		strings.Contains(s, "取締役等の会社") || strings.Contains(s, "非業務執行取締役") ||
 		strings.Contains(s, "取締役会設置会社") || strings.Contains(s, "監査役設置会社") || strings.Contains(s, "会計監査人設置会") ||
 		strings.Contains(s, "解散の事由") || strings.Contains(s, "監査役会設置会社") ||
@@ -497,6 +501,15 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		}
 		return nil
 	}
+	if h.ConsumeHoujinStock(s) {
+		v, err := GetHoujinValue(s)
+		if err != nil {
+			return err
+		}
+		h.HoujinStock = v
+		return nil
+	}
+
 	if h.ConsumeHoujinToukiRecord(s) {
 		v, err := GetHoujinValue(s)
 		if err != nil {

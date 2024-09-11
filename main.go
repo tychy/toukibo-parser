@@ -44,6 +44,7 @@ func main() {
 	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
 	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")
 	fmt.Println("HoujinCapital: ", h.GetHoujinCapital())
+	fmt.Println("HoujinStock: ", h.GetHoujinStock())
 	fmt.Println("HoujinCreatedAt: " + h.GetHoujinCreatedAt())
 	fmt.Println("HoujinBankruptedAt: " + h.GetHoujinBankruptedAt())
 	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())

@@ -13,6 +13,7 @@ type HoujinBody struct {
 	HoujinDissolvedAt  string
 	HoujinContinuedAt  string
 	HoujinCapital      HoujinValueArray
+	HoujinStock        HoujinValueArray
 	HoujinToukiRecord  HoujinValueArray
 	HoujinExecutive    []HoujinExecutiveValueArray
 }
