@@ -17,6 +17,7 @@ type TestData struct {
 	HoujinExecutiveNames      []string                       `yaml:"HoujinExecutiveNames"`
 	HoujinRepresentativeNames []string                       `yaml:"HoujinRepresentativeNames"`
 	HoujinCapital             string                         `yaml:"HoujinCapital"`
+	HoujinStock               string                         `yaml:"HoujinStock"`
 	HoujinCreatedAt           string                         `yaml:"HoujinCreatedAt"`
 	HoujinBankruptedAt        string                         `yaml:"HoujinBankruptedAt"`
 	HoujinDissolvedAt         string                         `yaml:"HoujinDissolvedAt"`
@@ -24,7 +25,7 @@ type TestData struct {
 }
 
 func TestToukiboParser(t *testing.T) {
-	testCount := 1147
+	testCount := 1148
 
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
@@ -117,6 +118,10 @@ func TestToukiboParser(t *testing.T) {
 
 			if fmt.Sprint(h.GetHoujinCapital()) != td.HoujinCapital {
 				t.Fatalf("capital is not match,\nwant : %s,\ngot  : %d,", td.HoujinCapital, h.GetHoujinCapital())
+			}
+
+			if fmt.Sprint(h.GetHoujinStock()) != td.HoujinStock {
+				t.Fatalf("stock is not match,\nwant : %s,\ngot  : %d,", td.HoujinStock, h.GetHoujinStock())
 			}
 
 			if h.GetHoujinCreatedAt() != td.HoujinCreatedAt {
