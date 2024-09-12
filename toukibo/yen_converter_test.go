@@ -48,7 +48,7 @@ func TestYenToNumber(t *testing.T) {
 			expected: 1234000000000000,
 		},
 		{
-			input:    "１２３４兆円１２３４億５６７８万９０１２円",
+			input:    "１２３４兆１２３４億５６７８万９０１２円",
 			expected: 1234123456789012,
 		},
 		{
