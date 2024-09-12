@@ -358,7 +358,7 @@ func (h *HoujinBody) ConsumeHoujinCapital(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinStock(s string) bool {
-	return strings.Contains(s, "発行済株式の総数")
+	return strings.HasPrefix(s, " ┃発行済株式の総数")
 }
 
 func (h *HoujinBody) ConsumeHoujinToukiRecord(s string) bool {
