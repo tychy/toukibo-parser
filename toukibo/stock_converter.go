@@ -1,10 +1,15 @@
 package toukibo
 
-import "strings"
+import (
+	"strings"
+)
 
 func StockToNumber(stock string) int {
 	// 発行済株式の総数５万株 → 50000
 	stock = strings.Replace(stock, "発行済株式の総数", "", -1)
+	if strings.HasPrefix(stock, "普通株式") { // sample1082用のハック
+		stock = strings.Replace(stock, "普通株式", "", -1)
+	}
 	stock = ZenkakuToHankaku(stock)
 
 	sums := 0
