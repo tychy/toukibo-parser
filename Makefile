@@ -1,18 +1,22 @@
 BUCKET_NAME=toukibo-parser-samples
 URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
 DATA_DIR=testdata
-NUM_SAMPLE=778
+export NUM_SAMPLE=1148
 
 build:
 	mkdir -p bin
 	go build -o bin/toukibo-parser main.go
 
 run: build
-	./bin/toukibo-parser -path=$(TARGET).pdf
+	./bin/toukibo-parser -mode=run -path=$(TARGET).pdf
 
 run/sample: build
-	./bin/toukibo-parser -path="$(DATA_DIR)/pdf/$(TARGET).pdf"
-	
+	./bin/toukibo-parser -mode=run -path="$(DATA_DIR)/pdf/$(TARGET).pdf"
+
+find/sample: build
+	./bin/toukibo-parser -mode=find -path="$(DATA_DIR)/pdf/$(TARGET).pdf" -target="$(FIND)"
+find/all: build
+	./find-samples.sh
 
 edit:
 	cat $(DATA_DIR)/yaml/$(TARGET).yaml
@@ -22,7 +26,7 @@ check:
 	make edit TARGET=$(TARGET)
 
 annotate: build
-	./bin/toukibo-parser -path="$(DATA_DIR)/pdf/$(TARGET).pdf" > $(DATA_DIR)/yaml/$(TARGET).yaml
+	./bin/toukibo-parser -mode=run -path="$(DATA_DIR)/pdf/$(TARGET).pdf" > $(DATA_DIR)/yaml/$(TARGET).yaml
 	make check TARGET=$(TARGET)
 
 annotate/all: build
