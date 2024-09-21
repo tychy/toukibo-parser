@@ -41,28 +41,10 @@ func GetStockNumber(s string) (int, string) {
 	return sums, ""
 }
 
-type PreferredStock struct {
-	Name string
-	Num  int
-}
-
-type Stock struct {
-	Total     int
-	Preferred []PreferredStock
-}
-
-func (s Stock) Sum() int {
-	sum := 0
-	for _, p := range s.Preferred {
-		sum += p.Num
-	}
-	return sum
-}
-
-func StockToNumber(stock string) int {
+func GetHoujinStock(stock string) HoujinStock {
 	stock = ZenkakuToHankaku(stock)
 	stock = trimAllSpace(stock)
-	res := Stock{}
+	res := HoujinStock{}
 
 	for {
 		if stock == "" {
@@ -90,7 +72,7 @@ func StockToNumber(stock string) int {
 			stock = strings.Replace(stock, "普通株式", "", -1)
 			normal, s := GetStockNumber(stock)
 			stock = s
-			res.Preferred = append(res.Preferred, PreferredStock{Name: "普通株式", Num: normal})
+			res.Preferred = append(res.Preferred, HoujinPreferredStock{Type: "普通株式", Amount: normal})
 			continue
 		}
 
@@ -102,7 +84,7 @@ func StockToNumber(stock string) int {
 			stock = strings.Replace(stock, matches[1], "", -1)
 			num, s := GetStockNumber(stock)
 			stock = s
-			res.Preferred = append(res.Preferred, PreferredStock{Name: matches[1], Num: num})
+			res.Preferred = append(res.Preferred, HoujinPreferredStock{Type: matches[1], Amount: num})
 			continue
 		}
 
@@ -112,5 +94,10 @@ func StockToNumber(stock string) int {
 		res.Total = res.Sum()
 	}
 
+	return res
+}
+
+func StockToNumber(stock string) int {
+	res := GetHoujinStock(stock)
 	return res.Total
 }
