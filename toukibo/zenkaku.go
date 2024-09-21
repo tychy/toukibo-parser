@@ -5,18 +5,19 @@ import (
 )
 
 const (
-	ZenkakuZero          = '０'
-	ZenkakuNine          = '９'
-	ZenkakuA             = 'Ａ'
-	ZenkakuZ             = 'Ｚ'
-	ZenkakuSmallA        = 'ａ'
-	ZenkakuSmallZ        = 'ｚ'
-	ZenkakuSpace         = '　'
-	ZenkakuColon         = '：'
-	ZenkakuSlash         = '／'
-	ZenkakuHyphen        = '－'
-	ZenkakuNumberPattern = `０-９`
-	ZenkakuStringPattern = `\p{Han}\p{Hiragana}\p{Katakana}Ａ-Ｚａ-ｚ０-９A-Za-z0-9＆’，‐．・ー\s　。－、：／`
+	ZenkakuZero                  = '０'
+	ZenkakuNine                  = '９'
+	ZenkakuA                     = 'Ａ'
+	ZenkakuZ                     = 'Ｚ'
+	ZenkakuSmallA                = 'ａ'
+	ZenkakuSmallZ                = 'ｚ'
+	ZenkakuSpace                 = '　'
+	ZenkakuColon                 = '：'
+	ZenkakuSlash                 = '／'
+	ZenkakuHyphen                = '－'
+	ZenkakuNumberPattern         = `０-９`
+	ZenkakuNoNumberStringPattern = `\p{Han}\p{Hiragana}\p{Katakana}Ａ-Ｚａ-ｚA-Za-z＆’，‐．・ー\s　。－、：／`
+	ZenkakuStringPattern         = ZenkakuNoNumberStringPattern + ZenkakuNumberPattern + `0-9`
 )
 
 func ZenkakuToHankaku(s string) string {
