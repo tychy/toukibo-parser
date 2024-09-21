@@ -120,8 +120,13 @@ func TestToukiboParser(t *testing.T) {
 				t.Fatalf("capital is not match,\nwant : %s,\ngot  : %d,", td.HoujinCapital, h.GetHoujinCapital())
 			}
 
-			if fmt.Sprint(h.GetHoujinStock()) != td.HoujinStock {
-				t.Fatalf("stock is not match,\nwant : %s,\ngot  : %d,", td.HoujinStock, h.GetHoujinStock())
+			stock := h.GetHoujinStock()
+			if stock.Total != stock.Sum() {
+				fmt.Println("stock.Total != stock.Sum()")
+			}
+
+			if fmt.Sprint(stock.Total) != td.HoujinStock {
+				t.Fatalf("stock is not match,\nwant : %s,\ngot  : %d,", td.HoujinStock, stock.Total)
 			}
 
 			if h.GetHoujinCreatedAt() != td.HoujinCreatedAt {
