@@ -76,12 +76,21 @@ func GetHoujinStock(stock string) HoujinStock {
 			continue
 		}
 
-		// *優先株式　で始まる場合
-		pattern := fmt.Sprintf("([%s]+優先株式)", ZenkakuNoNumberStringPattern)
+		if strings.HasPrefix(stock, "優先株式") {
+			stock = strings.Replace(stock, "優先株式", "", -1)
+			normal, s := GetStockNumber(stock)
+			stock = s
+			res.Preferred = append(res.Preferred, HoujinPreferredStock{Type: "優先株式", Amount: normal})
+			continue
+		}
+
+		// *優先株式 or *種類株式で始まる場合
+		pattern := fmt.Sprintf("([%s]+-[0-9]種優先株式|[%s]+[0-9]種優先株式|[%s]+[0-9]優先株式|[%s]+優先株式|[%s]+種類株式|[%s]+種株式)",
+			ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern)
 		regex := regexp.MustCompile(pattern)
 		matches := regex.FindStringSubmatch(stock)
 		if len(matches) > 0 {
-			stock = strings.Replace(stock, matches[1], "", -1)
+			stock = strings.Replace(stock, matches[1], "", 1)
 			num, s := GetStockNumber(stock)
 			stock = s
 			res.Preferred = append(res.Preferred, HoujinPreferredStock{Type: matches[1], Amount: num})
