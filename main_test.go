@@ -18,6 +18,7 @@ type TestData struct {
 	HoujinRepresentativeNames []string                       `yaml:"HoujinRepresentativeNames"`
 	HoujinCapital             string                         `yaml:"HoujinCapital"`
 	HoujinStock               string                         `yaml:"HoujinStock"`
+	HoujinPreferredStock      []toukibo.HoujinPreferredStock `yaml:"HoujinPreferredStock"`
 	HoujinCreatedAt           string                         `yaml:"HoujinCreatedAt"`
 	HoujinBankruptedAt        string                         `yaml:"HoujinBankruptedAt"`
 	HoujinDissolvedAt         string                         `yaml:"HoujinDissolvedAt"`
@@ -120,8 +121,24 @@ func TestToukiboParser(t *testing.T) {
 				t.Fatalf("capital is not match,\nwant : %s,\ngot  : %d,", td.HoujinCapital, h.GetHoujinCapital())
 			}
 
-			if fmt.Sprint(h.GetHoujinStock()) != td.HoujinStock {
-				t.Fatalf("stock is not match,\nwant : %s,\ngot  : %d,", td.HoujinStock, h.GetHoujinStock())
+			stock := h.GetHoujinStock()
+			if stock.Total != stock.Sum() {
+				fmt.Println("stock.Total != stock.Sum()")
+			}
+			if fmt.Sprint(stock.Total) != td.HoujinStock {
+				t.Fatalf("stock is not match,\nwant : %s,\ngot  : %d,", td.HoujinStock, stock.Total)
+			}
+
+			if len(stock.Preferred) != len(td.HoujinPreferredStock) {
+				t.Fatalf("preferred stock count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinPreferredStock), len(stock.Preferred))
+			}
+			for i, v := range stock.Preferred {
+				if v.Type != td.HoujinPreferredStock[i].Type {
+					t.Fatalf("preferred stock type is not match,\nwant : %s,\ngot  : %s", td.HoujinPreferredStock[i].Type, v.Type)
+				}
+				if v.Amount != td.HoujinPreferredStock[i].Amount {
+					t.Fatalf("preferred stock amount is not match,\nwant : %d,\ngot  : %d", td.HoujinPreferredStock[i].Amount, v.Amount)
+				}
 			}
 
 			if h.GetHoujinCreatedAt() != td.HoujinCreatedAt {

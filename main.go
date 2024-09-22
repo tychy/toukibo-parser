@@ -56,6 +56,8 @@ func mainRun() {
 		panic(err)
 	}
 
+	stock := h.GetHoujinStock()
+
 	fmt.Println("HoujinKaku: " + h.GetHoujinKaku())
 	fmt.Println("HoujinName: " + h.GetHoujinName())
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
@@ -63,7 +65,8 @@ func mainRun() {
 	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
 	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")
 	fmt.Printf("HoujinCapital: %d\n", h.GetHoujinCapital())
-	fmt.Printf("HoujinStock: %d\n", h.GetHoujinStock())
+	fmt.Printf("HoujinStock: %d\n", stock.Total)
+	fmt.Print("HoujinPreferredStock: \n" + stock.String())
 	fmt.Println("HoujinCreatedAt: " + h.GetHoujinCreatedAt())
 	fmt.Println("HoujinBankruptedAt: " + h.GetHoujinBankruptedAt())
 	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())
