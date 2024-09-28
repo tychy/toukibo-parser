@@ -36,6 +36,7 @@ const (
 	HoujinKakuPoliticalParty  HoujinkakuType = "政党"
 	HoujinKakuUniversity      HoujinkakuType = "国立大学法人"
 	HoujinKakuGakko           HoujinkakuType = "学校法人"
+	HoujinKakuBengoshi        HoujinkakuType = "弁護士法人"
 )
 
 func FindHoujinKaku(name, s string) HoujinkakuType {
@@ -97,6 +98,8 @@ func FindHoujinKaku(name, s string) HoujinkakuType {
 		return HoujinKakuUniversity
 	} else if strings.Contains(name, "学校法人") {
 		return HoujinKakuGakko
+	} else if strings.Contains(name, "弁護士法人") {
+		return HoujinKakuBengoshi
 	} else {
 		if strings.Contains(s, "宗教法人") || strings.Contains(s, "境内建物、境内地") {
 			return HoujinKakuShukyo
