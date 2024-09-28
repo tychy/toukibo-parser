@@ -10,9 +10,28 @@ go build -o bin/toukibo-parser main.go
 HoujinKaku: 株式会社
 HoujinName: 株式会社近畿商事
 HoujinAddress: 東京都Sample区Sample１丁目１番地１
+HoujinExecutiveValues: 
+  - Name: 大門十三
+    Position: 取締役
+  - Name: 壹岐正
+    Position: 取締役
+  - Name: 壹岐正
+    Position: 代表取締役
 HoujinExecutiveNames: [大門十三,壹岐正]
 HoujinRepresentativeNames: [壹岐正]
 HoujinCapital:  1000000
+HoujinStock: 25642
+HoujinPreferredStock: 
+  - Type: 普通株式
+    Amount: 13106
+  - Type: A種種類株式
+    Amount: 2332
+  - Type: AA種種類株式
+    Amount: 2221
+  - Type: B種種類株式
+    Amount: 3468
+  - Type: BB種種類株式
+    Amount: 4515
 HoujinCreatedAt: 令和3年1月6日
 HoujinBankruptedAt: 
 HoujinDissolvedAt: 
