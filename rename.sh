@@ -3,7 +3,7 @@
 set -e
 
 FILE_PATH=/Users/ryu/tmp
-IDX=1149
+IDX=1182
 
 for file in $FILE_PATH/*; do
     if [ -f "$file" ]; then
