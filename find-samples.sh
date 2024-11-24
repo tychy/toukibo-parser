@@ -3,7 +3,7 @@
 set -e
 
 DATA_DIR=testdata
-FIND=優先株式
+FIND=東方産業
 
 for ((i = 1; i <= NUM_SAMPLE; i++)); do
     ./bin/toukibo-parser -mode="find" -path="$DATA_DIR/pdf/sample$i.pdf" -target="$FIND"
