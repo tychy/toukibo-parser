@@ -67,6 +67,7 @@ import (
 	"crypto/md5"
 	"crypto/rc4"
 	"encoding/ascii85"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -678,7 +679,11 @@ func (v Value) Key(key string) Value {
 		}
 		x = strm.hdr
 	}
-	return v.r.resolve(v.ptr, x[name(key)])
+	res, err := v.r.resolve(v.ptr, x[name(key)])
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 // Keys returns a sorted list of the keys in the dictionary v.
@@ -704,10 +709,10 @@ func (v Value) Keys() []string {
 // Index returns the i'th element in the array v.
 // If v.Kind() != Array or if i is outside the array bounds,
 // Index returns a null Value.
-func (v Value) Index(i int) Value {
+func (v Value) Index(i int) (Value, error) {
 	x, ok := v.data.(array)
 	if !ok || i < 0 || i >= len(x) {
-		return Value{}
+		return Value{}, nil
 	}
 	return v.r.resolve(v.ptr, x[i])
 }
@@ -722,30 +727,33 @@ func (v Value) Len() int {
 	return len(x)
 }
 
-func (r *Reader) resolve(parent objptr, x interface{}) Value {
+func (r *Reader) resolve(parent objptr, x interface{}) (Value, error) {
 	if ptr, ok := x.(objptr); ok {
 		if ptr.id >= uint32(len(r.xref)) {
-			return Value{}
+			return Value{}, nil
 		}
 		xref := r.xref[ptr.id]
 		if xref.ptr != ptr || !xref.inStream && xref.offset == 0 {
-			return Value{}
+			return Value{}, nil
 		}
 		// var obj object
 		if xref.inStream {
-			strm := r.resolve(parent, xref.stream)
+			strm, err := r.resolve(parent, xref.stream)
+			if err != nil {
+				return Value{}, err
+			}
 		Search:
 			for {
 				if strm.Kind() != Stream {
-					panic("not a stream")
+					return Value{}, errors.New("not a stream")
 				}
 				if strm.Key("Type").Name() != "ObjStm" {
-					panic("not an object stream")
+					return Value{}, errors.New("not an object stream")
 				}
 				n := int(strm.Key("N").Int64())
 				first := strm.Key("First").Int64()
 				if first == 0 {
-					panic("missing First")
+					return Value{}, errors.New("missing First")
 				}
 				b := newBuffer(strm.Reader(), 0)
 				b.allowEOF = true
@@ -756,14 +764,14 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 						b.seekForward(first + off)
 						_, err := b.readObject()
 						if err != nil {
-							return Value{}
+							return Value{}, nil
 						}
 						break Search
 					}
 				}
 				ext := strm.Key("Extends")
 				if ext.Kind() != Stream {
-					panic("cannot find object in stream")
+					return Value{}, errors.New("cannot find object in stream")
 				}
 				strm = ext
 			}
@@ -773,15 +781,14 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 			b.useAES = r.useAES
 			obj, err := b.readObject()
 			if err != nil {
-				return Value{}
+				return Value{}, nil
 			}
 			def, ok := obj.(objdef)
 			if !ok {
-				panic(fmt.Errorf("loading %v: found %T instead of objdef", ptr, obj))
-				//return Value{}
+				return Value{}, fmt.Errorf("loading %v: found %T instead of objdef", ptr, obj)
 			}
 			if def.ptr != ptr {
-				panic(fmt.Errorf("loading %v: found %v", ptr, def.ptr))
+				return Value{}, fmt.Errorf("loading %v: found %v", ptr, def.ptr)
 			}
 			x = def.obj
 		}
@@ -790,13 +797,11 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 
 	switch x := x.(type) {
 	case nil, bool, int64, float64, name, dict, array, stream:
-		return Value{r, parent, x}
+		return Value{r, parent, x}, nil
 	case string:
-		return Value{r, parent, x}
+		return Value{r, parent, x}, nil
 	default:
-		// panic(fmt.Errorf("unexpected value type %T in resolve", x))
-		fmt.Sprintf("unexpected value type %T in resolve", x)
-		return Value{}
+		return Value{}, fmt.Errorf("unexpected value type %T in resolve", x)
 	}
 }
 
@@ -829,14 +834,22 @@ func (v Value) Reader() io.ReadCloser {
 	param := v.Key("DecodeParms")
 	switch filter.Kind() {
 	default:
-		panic(fmt.Errorf("unsupported filter %v", filter))
+		return &errorReadCloser{fmt.Errorf("unsupported filter %v", filter)}
 	case Null:
 		// ok
 	case Name:
 		rd = applyFilter(rd, filter.Name(), param)
 	case Array:
 		for i := 0; i < filter.Len(); i++ {
-			rd = applyFilter(rd, filter.Index(i).Name(), param.Index(i))
+			fi, err := filter.Index(i)
+			if err != nil {
+				return &errorReadCloser{err}
+			}
+			pi, err := param.Index(i)
+			if err != nil {
+				return &errorReadCloser{err}
+			}
+			rd = applyFilter(rd, fi.Name(), pi)
 		}
 	}
 
@@ -916,7 +929,11 @@ var passwordPad = []byte{
 
 func (r *Reader) initEncrypt(password string) error {
 	// See PDF 32000-1:2008, §7.6.
-	encrypt, _ := r.resolve(objptr{}, r.trailer["Encrypt"]).data.(dict)
+	resolved, err := r.resolve(objptr{}, r.trailer["Encrypt"])
+	if err != nil {
+		return err
+	}
+	encrypt, _ := resolved.data.(dict)
 	if encrypt["Filter"] != name("Standard") {
 		return fmt.Errorf("unsupported PDF: encryption filter %v", objfmt(encrypt["Filter"]))
 	}

@@ -5,6 +5,7 @@
 package pdf
 
 import (
+	"errors"
 	"fmt"
 	"io"
 )
@@ -50,8 +51,7 @@ func newDict() Value {
 // points to Unicode code points.
 //
 // There is no support for executable blocks, among other limitations.
-//
-func Interpret(strm Value, do func(stk *Stack, op string)) {
+func Interpret(strm Value, do func(stk *Stack, op string) error) error {
 	rd := strm.Reader()
 	b := newBuffer(rd, 0)
 	b.allowEOF = true
@@ -77,7 +77,10 @@ Reading:
 						continue Reading
 					}
 				}
-				do(&stk, string(kw))
+				err := do(&stk, string(kw))
+				if err != nil {
+					return err
+				}
 				continue
 			case "dict":
 				stk.Pop()
@@ -85,31 +88,31 @@ Reading:
 				continue
 			case "currentdict":
 				if len(dicts) == 0 {
-					panic("no current dictionary")
+					return errors.New("no current dictionary")
 				}
 				stk.Push(Value{nil, objptr{}, dicts[len(dicts)-1]})
 				continue
 			case "begin":
 				d := stk.Pop()
 				if d.Kind() != Dict {
-					panic("cannot begin non-dict")
+					return errors.New("cannot begin non-dict")
 				}
 				dicts = append(dicts, d.data.(dict))
 				continue
 			case "end":
 				if len(dicts) <= 0 {
-					panic("mismatched begin/end")
+					return errors.New("mismatched begin/end")
 				}
 				dicts = dicts[:len(dicts)-1]
 				continue
 			case "def":
 				if len(dicts) <= 0 {
-					panic("def without open dict")
+					return errors.New("def without open dict")
 				}
 				val := stk.Pop()
 				key, ok := stk.Pop().data.(name)
 				if !ok {
-					panic("def of non-name")
+					return errors.New("def of non-name")
 				}
 				dicts[len(dicts)-1][key] = val.data
 				continue
@@ -121,10 +124,11 @@ Reading:
 		b.unreadToken(tok)
 		obj, err := b.readObject()
 		if err != nil {
-			return
+			return err
 		}
 		stk.Push(Value{nil, objptr{}, obj})
 	}
+	return nil
 }
 
 type seqReader struct {
