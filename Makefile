@@ -1,7 +1,7 @@
 BUCKET_NAME=toukibo-parser-samples
 URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
 DATA_DIR=testdata
-export NUM_SAMPLE=1330
+export NUM_SAMPLE=1452
 
 build:
 	mkdir -p bin
@@ -15,8 +15,12 @@ run/sample: build
 
 find/sample: build
 	./bin/toukibo-parser -mode=find -path="$(DATA_DIR)/pdf/$(TARGET).pdf" -target="$(FIND)"
+
 find/all: build
-	./find-samples.sh
+	FIND=$(FIND) ./find-samples.sh
+
+rename:
+	IDX=$(IDX) ./rename.sh
 
 edit:
 	cat $(DATA_DIR)/yaml/$(TARGET).yaml

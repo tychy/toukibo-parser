@@ -29,6 +29,7 @@ const (
 	HoujinKakuZeirishi        HoujinkakuType = "税理士法人"
 	HoujinKakuShakaifukusi    HoujinkakuType = "社会福祉法人"
 	HoujinKakuIppanShadan     HoujinkakuType = "一般社団法人"
+	HoujinKakuKouekiShadan    HoujinkakuType = "公益社団法人"
 	HoujinKakuIppanZaisan     HoujinkakuType = "一般財産法人"
 	HoujinKakuIppanZaidan     HoujinkakuType = "一般財団法人"
 	HoujinKakuNPO             HoujinkakuType = "NPO法人"
@@ -83,6 +84,8 @@ func FindHoujinKaku(name, s string) HoujinkakuType {
 		return HoujinKakuShakaifukusi
 	} else if strings.Contains(name, "一般社団法人") {
 		return HoujinKakuIppanShadan
+	} else if strings.Contains(name, "公益社団法人") {
+		return HoujinKakuKouekiShadan
 	} else if strings.Contains(name, "一般財産法人") {
 		return HoujinKakuIppanZaisan
 	} else if strings.Contains(name, "一般財団法人") {
