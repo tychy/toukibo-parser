@@ -302,7 +302,11 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 				}
 				// sample1385用のハック
 				// 平成２９年　８月２４日更正の場合、その前の役員は無効にする
-				if strings.Contains(joinedThree, "日更正") {
+				if strings.Contains(joinedThree, "更正") {
+					evsArr[idx-1].IsValid = false
+				}
+
+				if strings.Contains(joinedThree, "重任") {
 					evsArr[idx-1].IsValid = false
 				}
 			}
