@@ -38,17 +38,19 @@ HoujinDissolvedAt:
 HoujinContinuedAt: 
 ```
 
+#### テスト実行
+```
+% make get/sample
+% make test
+```
+
 ## デモ
 [こちら](https://toukibo-parser-demo.tychy.jp/)のページでパーサーの性能をお試しいただくことが可能です。
 
 ![デモ](https://github.com/tychy/toukibo-parser/blob/main/parser-demo.jpg)
 
-
-## テストを実行する場合
-```
-% make get/sample
-% make test
-```
+## 商業登記簿API
+このパーサーを利用した商業登記簿APIは[こちら](https://toukikun-docs.tychy.jp/)
 
 ## ライセンス
 このソフトウェアを利用するには、ライセンス契約が必要です。
