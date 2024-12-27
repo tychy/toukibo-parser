@@ -225,7 +225,7 @@ func splitThree(s string) (string, string, string) {
 }
 
 func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
-	if debug {
+	if DebugOn {
 		PrintBar()
 	}
 
@@ -235,7 +235,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 	var idx int
 	for _, p := range parts {
-		if debug {
+		if DebugOn {
 			PrintSlice(extractLines(p))
 		}
 
@@ -293,10 +293,16 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 				// sample 30, 89, 106用のハック
 				// XXXXの氏/名称変更がある場合、その前の役員は無効にする
-				if strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏変更") ||
-					strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の氏名変更") ||
-					strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名称変更") ||
-					strings.Contains(strings.Join(three, ""), evsArr[idx-1].Name+"の名") {
+				joinedThree := strings.Join(three, "")
+				if strings.Contains(joinedThree, evsArr[idx-1].Name+"の氏変更") ||
+					strings.Contains(joinedThree, evsArr[idx-1].Name+"の氏名変更") ||
+					strings.Contains(joinedThree, evsArr[idx-1].Name+"の名称変更") ||
+					strings.Contains(joinedThree, evsArr[idx-1].Name+"の名") {
+					evsArr[idx-1].IsValid = false
+				}
+				// sample1385用のハック
+				// 平成２９年　８月２４日更正の場合、その前の役員は無効にする
+				if strings.Contains(joinedThree, "日更正") {
 					evsArr[idx-1].IsValid = false
 				}
 			}
@@ -305,7 +311,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		idx += len(evs)
 		evsArr = append(evsArr, evs...)
 	}
-	if debug {
+	if DebugOn {
 		fmt.Println(evsArr)
 	}
 	return evsArr, nil
