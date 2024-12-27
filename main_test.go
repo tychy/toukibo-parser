@@ -123,6 +123,7 @@ func TestToukiboParser(t *testing.T) {
 
 			stock := h.GetHoujinStock()
 			if stock.Total != stock.Sum() {
+				// TODO: make it error
 				fmt.Println("stock.Total != stock.Sum()")
 			}
 			if fmt.Sprint(stock.Total) != td.HoujinStock {
