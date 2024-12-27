@@ -2,7 +2,7 @@ package toukibo
 
 import "fmt"
 
-const debug = false
+const DebugOn = false
 
 func PrintSlice(s []string) {
 	for i, v := range s {

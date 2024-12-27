@@ -26,6 +26,11 @@ func (hva HoujinExecutiveValueArray) String() string {
 	for _, hv := range hva {
 		b.WriteString("  - Name: " + hv.Name + "\n")
 		b.WriteString("    Position: " + hv.Position + "\n")
+		if DebugOn {
+			b.WriteString("    IsValid: " + fmt.Sprintf("%v", hv.IsValid) + "\n")
+			b.WriteString("    RegisterAt: " + hv.RegisterAt + "\n")
+			b.WriteString("    ResignedAt: " + hv.ResignedAt + "\n")
+		}
 	}
 	return b.String()
 }
