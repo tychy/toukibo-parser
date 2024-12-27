@@ -291,20 +291,27 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 					evsArr[idx-1].IsValid = false
 				}
 
+				joinedThree := strings.Join(three, "")
+				if strings.Contains(joinedThree, "重任") &&
+					evsArr[idx-1].Position == evs[0].Position { // sample788用のハック
+					evsArr[idx-1].IsValid = false
+				}
+
 				// sample 30, 89, 106用のハック
 				// XXXXの氏/名称変更がある場合、その前の役員は無効にする
-				joinedThree := strings.Join(three, "")
 				if strings.Contains(joinedThree, evsArr[idx-1].Name+"の氏変更") ||
 					strings.Contains(joinedThree, evsArr[idx-1].Name+"の氏名変更") ||
 					strings.Contains(joinedThree, evsArr[idx-1].Name+"の名称変更") ||
 					strings.Contains(joinedThree, evsArr[idx-1].Name+"の名") {
 					evsArr[idx-1].IsValid = false
 				}
+
 				// sample1385用のハック
 				// 平成２９年　８月２４日更正の場合、その前の役員は無効にする
-				if strings.Contains(joinedThree, "日更正") {
+				if strings.Contains(joinedThree, "更正") {
 					evsArr[idx-1].IsValid = false
 				}
+
 			}
 		}
 
