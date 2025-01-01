@@ -34,4 +34,3 @@ jobs:
       run: make get/sample
     - name: Test
       run: make test
-    - uses: k1LoW/octocov-action@v0
