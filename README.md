@@ -47,7 +47,7 @@ HoujinContinuedAt:
 ## デモ
 [こちら](https://toukibo-parser-demo.tychy.jp/)のページでパーサーの性能をお試しいただくことが可能です。
 
-![デモ](https://github.com/tychy/toukibo-parser/blob/main/parser-demo.jpg)
+![デモ](https://github.com/tychy/toukibo-parser/blob/main/misc/parser-demo.jpg)
 
 ## 商業登記簿API
 このパーサーを利用した商業登記簿APIは[こちら](https://toukikun-docs.tychy.jp/)
