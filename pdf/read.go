@@ -69,7 +69,6 @@ import (
 	"encoding/ascii85"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -829,7 +828,7 @@ func (v Value) Reader() io.ReadCloser {
 	param := v.Key("DecodeParms")
 	switch filter.Kind() {
 	default:
-		panic(fmt.Errorf("unsupported filter %v", filter))
+		return &errorReadCloser{fmt.Errorf("unsupported filter %v", filter)}
 	case Null:
 		// ok
 	case Name:
@@ -840,17 +839,17 @@ func (v Value) Reader() io.ReadCloser {
 		}
 	}
 
-	return ioutil.NopCloser(rd)
+	return io.NopCloser(rd)
 }
 
 func applyFilter(rd io.Reader, name string, param Value) io.Reader {
 	switch name {
 	default:
-		panic("unknown filter " + name)
+		return &errorReadCloser{fmt.Errorf("unsupported filter %v", name)}
 	case "FlateDecode":
 		zr, err := zlib.NewReader(rd)
 		if err != nil {
-			panic(err)
+			return &errorReadCloser{err}
 		}
 		pred := param.Key("Predictor")
 		if pred.Kind() == Null {
@@ -859,8 +858,7 @@ func applyFilter(rd io.Reader, name string, param Value) io.Reader {
 		columns := param.Key("Columns").Int64()
 		switch pred.Int64() {
 		default:
-			fmt.Println("unknown predictor", pred)
-			panic("pred")
+			return &errorReadCloser{fmt.Errorf("unsupported predictor %v", pred)}
 		case 12:
 			return &pngUpReader{r: zr, hist: make([]byte, 1+columns), tmp: make([]byte, 1+columns)}
 		}
@@ -870,7 +868,7 @@ func applyFilter(rd io.Reader, name string, param Value) io.Reader {
 
 		switch param.Keys() {
 		default:
-			panic("not expected DecodeParms for ascii85")
+			return &errorReadCloser{fmt.Errorf("not expected DecodeParms for ascii85")}
 		case nil:
 			return decoder
 		}
@@ -1061,17 +1059,17 @@ func cryptKey(key []byte, useAES bool, ptr objptr) []byte {
 	return h.Sum(nil)
 }
 
-func decryptString(key []byte, useAES bool, ptr objptr, x string) string {
+func decryptString(key []byte, useAES bool, ptr objptr, x string) (string, error) {
 	key = cryptKey(key, useAES, ptr)
 	if useAES {
-		panic("AES not implemented")
+		return "", fmt.Errorf("AES not implemented")
 	} else {
 		c, _ := rc4.NewCipher(key)
 		data := []byte(x)
 		c.XORKeyStream(data, data)
 		x = string(data)
 	}
-	return x
+	return x, nil
 }
 
 func decryptStream(key []byte, useAES bool, ptr objptr, rd io.Reader) io.Reader {
@@ -1079,7 +1077,7 @@ func decryptStream(key []byte, useAES bool, ptr objptr, rd io.Reader) io.Reader 
 	if useAES {
 		cb, err := aes.NewCipher(key)
 		if err != nil {
-			panic("AES: " + err.Error())
+			return &errorReadCloser{err}
 		}
 		iv := make([]byte, 16)
 		io.ReadFull(rd, iv)
