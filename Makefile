@@ -17,10 +17,10 @@ find/sample: build
 	./bin/toukibo-parser -mode=find -path="$(DATA_DIR)/pdf/$(TARGET).pdf" -target="$(FIND)"
 
 find/all: build
-	FIND=$(FIND) ./script/find-samples.sh
+	FIND=$(FIND) ./scripts/find-samples.sh
 
 rename:
-	IDX=$(IDX) ./script/rename.sh
+	IDX=$(IDX) ./scripts/rename.sh
 
 edit:
 	cat $(DATA_DIR)/yaml/$(TARGET).yaml
@@ -34,7 +34,7 @@ annotate: build
 	make check TARGET=$(TARGET)
 
 annotate/all: build
-	./script/annotate-samples.sh
+	./scripts/annotate-samples.sh
 
 test: build
 	go test -coverprofile=coverage.out -shuffle=on ./...
