@@ -25,9 +25,23 @@ type TestData struct {
 	HoujinContinuedAt         string                         `yaml:"HoujinContinuedAt"`
 }
 
-func TestToukiboParser(t *testing.T) {
-	testCount := 1452
+func BenchmarkMain(b *testing.B) {
+	const testCount = 1000
+	for i := 1; i <= testCount; i++ {
+		pdfFileName := fmt.Sprintf("testdata/pdf/sample%d.pdf", i)
+		content, err := readPdf(pdfFileName)
+		if err != nil {
+			b.Fatal(err)
+		}
+		_, err = toukibo.Parse(content)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
 
+func TestToukiboParser(t *testing.T) {
+	const testCount = 1452
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			pdfFileName := fmt.Sprintf("testdata/pdf/sample%d.pdf", i)
