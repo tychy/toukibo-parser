@@ -1,9 +1,11 @@
-package toukibo_parser
+package main
 
 import (
 	"flag"
 	"fmt"
 	"strings"
+
+	toukibo_parser "github.com/tychy/toukibo-parser"
 )
 
 var (
@@ -35,7 +37,7 @@ func main() {
 }
 
 func mainRun() error {
-	h, err := ParseByPDFPath(path)
+	h, err := toukibo_parser.ParseByPDFPath(path)
 	if err != nil {
 		return err
 	}
@@ -86,7 +88,7 @@ func min(a, b int) int {
 }
 
 func mainFind(s string) error {
-	content, err := GetContentByPDFPath(path)
+	content, err := toukibo_parser.GetContentByPDFPath(path)
 	if err != nil {
 		return err
 	}
