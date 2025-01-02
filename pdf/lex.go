@@ -436,7 +436,11 @@ func (b *buffer) readObject() (object, error) {
 	}
 
 	if str, ok := tok.(string); ok && b.key != nil && b.objptr.id != 0 {
-		tok = decryptString(b.key, b.useAES, b.objptr, str)
+		var err error
+		tok, err = decryptString(b.key, b.useAES, b.objptr, str)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !b.allowObjptr {

@@ -24,36 +24,42 @@ func main() {
 
 	switch mode {
 	case "run":
-		mainRun()
+		err := mainRun()
+		if err != nil {
+			fmt.Println(err)
+		}
 	case "find":
-		mainFind(target)
+		err := mainFind(target)
+		if err != nil {
+			fmt.Println(err)
+		}
 	default:
 		fmt.Println("invalid mode")
 	}
 }
 
-func mainRun() {
+func mainRun() error {
 	content, err := readPdf(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	h, err := toukibo.Parse(content)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	repName, err := h.GetHoujinRepresentativeNames()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	execs, err := h.GetHoujinExecutives()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	execNames, err := h.GetHoujinExecutiveNames()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	stock := h.GetHoujinStock()
@@ -71,7 +77,7 @@ func mainRun() {
 	fmt.Println("HoujinBankruptedAt: " + h.GetHoujinBankruptedAt())
 	fmt.Println("HoujinDissolvedAt: " + h.GetHoujinDissolvedAt())
 	fmt.Println("HoujinContinuedAt: " + h.GetHoujinContinuedAt())
-	return
+	return nil
 }
 
 func max(a, b int) int {
@@ -88,10 +94,10 @@ func min(a, b int) int {
 	return b
 }
 
-func mainFind(s string) {
+func mainFind(s string) error {
 	content, err := readPdf(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if strings.Contains(content, s) {
@@ -106,7 +112,7 @@ func mainFind(s string) {
 			content = content[idx+1:]
 		}
 	}
-	return
+	return nil
 }
 
 func readPdf(path string) (string, error) {
