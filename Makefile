@@ -40,7 +40,9 @@ test: build
 	go test -coverprofile=coverage.out -shuffle=on ./...
 
 bench: build
-	go test -benchmem -run=^$$ -bench ^BenchmarkMain$$ github.com/tychy/toukibo-parser
+	go test -benchmem -run=^$$ -bench ^BenchmarkMain$$ -cpuprofile cpu.out -memprofile mem.out github.com/tychy/toukibo-parser
+#	go tool pprof -http=":8887" cpu.out
+#	go tool pprof -http=":8888" mem.out
 
 zip/sample:
 	zip -r testdata.zip testdata
