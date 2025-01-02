@@ -5,7 +5,7 @@ export NUM_SAMPLE=1452
 
 build:
 	mkdir -p bin
-	go build -o bin/toukibo-parser main.go
+	go build -o bin/toukibo-parser main.go toukibo_parser.go
 
 run: build
 	./bin/toukibo-parser -mode=run -path=$(TARGET).pdf

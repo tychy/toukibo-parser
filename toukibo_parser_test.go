@@ -1,11 +1,11 @@
-package main
+package toukibo_parser
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
-	"github.com/tychy/toukibo-parser/toukibo"
+	"github.com/tychy/toukibo-parser/internal/toukibo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,7 +29,7 @@ func BenchmarkMain(b *testing.B) {
 	const testCount = 1000
 	for i := 1; i <= testCount; i++ {
 		pdfFileName := fmt.Sprintf("testdata/pdf/sample%d.pdf", i)
-		content, err := readPdf(pdfFileName)
+		content, err := GetContentByPDFPath(pdfFileName)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -46,7 +46,7 @@ func TestToukiboParser(t *testing.T) {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			pdfFileName := fmt.Sprintf("testdata/pdf/sample%d.pdf", i)
 			yamlFileName := fmt.Sprintf("testdata/yaml/sample%d.yaml", i)
-			content, err := readPdf(pdfFileName)
+			content, err := GetContentByPDFPath(pdfFileName)
 			if err != nil {
 				t.Fatal(err)
 			}

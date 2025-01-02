@@ -1,13 +1,9 @@
-package main
+package toukibo_parser
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"strings"
-
-	"github.com/tychy/toukibo-parser/pdf"
-	"github.com/tychy/toukibo-parser/toukibo"
 )
 
 var (
@@ -39,12 +35,7 @@ func main() {
 }
 
 func mainRun() error {
-	content, err := readPdf(path)
-	if err != nil {
-		return err
-	}
-
-	h, err := toukibo.Parse(content)
+	h, err := ParseByPDFPath(path)
 	if err != nil {
 		return err
 	}
@@ -71,7 +62,7 @@ func mainRun() error {
 	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
 	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")
 	fmt.Printf("HoujinCapital: %d\n", h.GetHoujinCapital())
-	fmt.Printf("HoujinStock: %d\n", stock.Total)
+	fmt.Printf("HoujinStock: %d\n", h.GetHoujinTotalStock())
 	fmt.Print("HoujinPreferredStock: \n" + stock.String())
 	fmt.Println("HoujinCreatedAt: " + h.GetHoujinCreatedAt())
 	fmt.Println("HoujinBankruptedAt: " + h.GetHoujinBankruptedAt())
@@ -95,7 +86,7 @@ func min(a, b int) int {
 }
 
 func mainFind(s string) error {
-	content, err := readPdf(path)
+	content, err := GetContentByPDFPath(path)
 	if err != nil {
 		return err
 	}
@@ -113,18 +104,4 @@ func mainFind(s string) error {
 		}
 	}
 	return nil
-}
-
-func readPdf(path string) (string, error) {
-	r, err := pdf.Open(path)
-	if err != nil {
-		return "", err
-	}
-	var buf bytes.Buffer
-	b, err := r.GetPlainText()
-	if err != nil {
-		return "", err
-	}
-	buf.ReadFrom(b)
-	return buf.String(), nil
 }
