@@ -130,6 +130,11 @@ func (h *Houjin) GetHoujinStock() HoujinStock {
 	return HoujinStock{Total: 0}
 }
 
+func (h *Houjin) GetHoujinTotalStock() int {
+	stock := h.GetHoujinStock()
+	return stock.Total
+}
+
 func (h *Houjin) GetHoujinExecutives() (HoujinExecutiveValueArray, error) {
 	return h.body.GetHoujinExecutives()
 }

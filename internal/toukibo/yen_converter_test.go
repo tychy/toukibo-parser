@@ -3,7 +3,7 @@ package toukibo_test
 import (
 	"testing"
 
-	"github.com/tychy/toukibo-parser/toukibo"
+	"github.com/tychy/toukibo-parser/internal/toukibo"
 )
 
 func TestYenToNumber(t *testing.T) {
