@@ -37,7 +37,7 @@ annotate/all: build
 	./scripts/annotate-samples.sh
 
 test: build
-	go test -coverprofile=coverage.out -shuffle=on ./...
+	go test -p 4 -coverprofile=coverage.out -shuffle=on ./...
 
 bench: build
 	go test -benchmem -run=^$$ -bench ^BenchmarkMain$$ -cpuprofile cpu.out -memprofile mem.out github.com/tychy/toukibo-parser

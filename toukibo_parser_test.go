@@ -44,6 +44,8 @@ func TestToukiboParser(t *testing.T) {
 	const testCount = 1452
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
+			i := i
+			t.Parallel()
 			pdfFileName := fmt.Sprintf("testdata/pdf/sample%d.pdf", i)
 			yamlFileName := fmt.Sprintf("testdata/yaml/sample%d.yaml", i)
 			content, err := GetContentByPDFPath(pdfFileName)
