@@ -41,7 +41,7 @@ func BenchmarkMain(b *testing.B) {
 }
 
 func TestToukiboParser(t *testing.T) {
-	const testCount = 1452
+	const testCount = 1522
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			i := i

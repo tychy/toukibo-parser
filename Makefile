@@ -1,7 +1,7 @@
 BUCKET_NAME=toukibo-parser-samples
 URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
 DATA_DIR=testdata
-export NUM_SAMPLE=1452
+export NUM_SAMPLE=1522
 
 build:
 	mkdir -p bin

@@ -3,7 +3,7 @@
 set -e
 
 FILE_PATH=/Users/ryu/Downloads/20250118
-IDX=1468
+IDX=1522
 
 for file in $FILE_PATH/*; do
     if [ -f "$file" ]; then
