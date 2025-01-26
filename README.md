@@ -50,7 +50,7 @@ HoujinContinuedAt:
 ![デモ](https://github.com/tychy/toukibo-parser/blob/main/misc/parser-demo.jpg)
 
 ## 商業登記簿API
-このパーサーを利用した商業登記簿APIは[こちら](https://toukikun-docs.tychy.jp/)
+このパーサーを利用した商業登記簿APIは[こちら](https://portal.tychy.jp/)
 
 ## ライセンス
 このソフトウェアを利用するには、ライセンス契約が必要です。
