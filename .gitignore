@@ -2,6 +2,7 @@ bin
 testdata
 testdata.zip
 .DS_Store
+data
 
 *.out
 out.txt
