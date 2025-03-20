@@ -10,6 +10,7 @@ import (
 )
 
 type TestData struct {
+	HoujinNumber              string                         `yaml:"HoujinNumber"`
 	HoujinKaku                string                         `yaml:"HoujinKaku"`
 	HoujinName                string                         `yaml:"HoujinName"`
 	HoujinAddress             string                         `yaml:"HoujinAddress"`
@@ -69,6 +70,9 @@ func TestToukiboParser(t *testing.T) {
 			}
 
 			// check
+			if h.GetHoujinNumber() != td.HoujinNumber {
+				t.Fatalf("number is not match,\nwant : %s,\ngot  : %s,", td.HoujinNumber, h.GetHoujinNumber())
+			}
 			if h.GetHoujinKaku() != td.HoujinKaku {
 				t.Fatalf("kaku is not match,\nwant : %s,\ngot  : %s,", td.HoujinKaku, h.GetHoujinKaku())
 			}

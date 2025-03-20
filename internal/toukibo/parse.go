@@ -72,6 +72,10 @@ func (h *Houjin) GetToukiboCreatedAt() time.Time {
 	return h.header.CreatedAt
 }
 
+func (h *Houjin) GetHoujinNumber() string {
+	return h.body.HoujinNumber
+}
+
 func (h *Houjin) GetHoujinKaku() string {
 	return string(h.body.HoujinKaku)
 }
