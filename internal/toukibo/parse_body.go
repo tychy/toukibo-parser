@@ -332,7 +332,9 @@ func (h *HoujinBody) ConsumeHoujinNumber(s string) bool {
 
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		h.HoujinNumber = ZenkakuToHankaku(matches[1])
+		//2600-01-037869
+		houjinNumber := ZenkakuToHankaku(matches[1])
+		h.HoujinNumber = houjinNumber[:4] + houjinNumber[5:7] + houjinNumber[8:]
 		return true
 	}
 	return false

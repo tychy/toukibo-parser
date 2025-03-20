@@ -57,6 +57,7 @@ func mainRun() error {
 
 	stock := h.GetHoujinStock()
 
+	fmt.Println("HoujinNumber: " + h.GetHoujinNumber())
 	fmt.Println("HoujinKaku: " + h.GetHoujinKaku())
 	fmt.Println("HoujinName: " + h.GetHoujinName())
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
