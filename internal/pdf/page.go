@@ -55,13 +55,21 @@ Search:
 }
 
 // NumPage returns the number of pages in the PDF file.
-func (r *Reader) NumPage() int {
-	return int(r.Trailer().Key("Root").Key("Pages").Key("Count").Int64())
+func (r *Reader) NumPage() (n int, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("failed to get number of pages: %v", r)
+		}
+	}()
+	return int(r.Trailer().Key("Root").Key("Pages").Key("Count").Int64()), nil
 }
 
 // GetPlainText returns all the text in the PDF file
 func (r *Reader) GetPlainText() (reader io.Reader, err error) {
-	pages := r.NumPage()
+	pages, err := r.NumPage()
+	if err != nil {
+		return nil, err
+	}
 	var buf bytes.Buffer
 	fonts := make(map[string]*Font)
 	for i := 1; i <= pages; i++ {

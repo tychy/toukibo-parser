@@ -82,7 +82,7 @@ func (b *buffer) errorf(format string, args ...interface{}) string {
 	return fmt.Sprintf(format, args...)
 }
 
-func (b *buffer) reload() (bool, error) {
+func (b *buffer) reload() {
 	n := cap(b.buf) - int(b.offset%int64(cap(b.buf)))
 	n, err := b.r.Read(b.buf[:n])
 	if n == 0 && err != nil {
@@ -90,29 +90,20 @@ func (b *buffer) reload() (bool, error) {
 		b.pos = 0
 		if b.allowEOF && err == io.EOF {
 			b.eof = true
-			return false, err
+			return
 		}
-		fmt.Sprint(b.errorf("malformed PDF: reading at offset %d: %v", b.offset, err))
-		return false, err
+		panic(b.errorf("malformed PDF: reading at offset %d: %v", b.offset, err))
 	}
 	b.offset += int64(n)
 	b.buf = b.buf[:n]
 	b.pos = 0
-	return true, err
 }
 
-func (b *buffer) seekForward(offset int64) (err error) {
+func (b *buffer) seekForward(offset int64) {
 	for b.offset < offset {
-		rel, err := b.reload()
-		if err != nil {
-			return err
-		}
-		if !rel {
-			return err
-		}
+		b.reload()
 	}
 	b.pos = len(b.buf) - int(b.offset-offset)
-	return err
 }
 
 func (b *buffer) readOffset() int64 {
