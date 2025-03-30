@@ -7,3 +7,7 @@ data
 *.out
 out.txt
 *.test
+
+.wrangler
+node_modules
+package-lock.json

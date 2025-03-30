@@ -179,3 +179,13 @@ func TestToukiboParser(t *testing.T) {
 		})
 	}
 }
+
+func TestBrokenToukibo(t *testing.T) {
+	for i := 1; i <= 3; i++ {
+		pdfFileName := fmt.Sprintf("testdata/broken/broken%d.pdf", i)
+		_, err := GetContentByPDFPath(pdfFileName)
+		if err == nil {
+			t.Fatal("should be error")
+		}
+	}
+}
