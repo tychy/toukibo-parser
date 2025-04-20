@@ -35,7 +35,7 @@ func ReadCreatedAt(s string) (time.Time, error) {
 
 		// 日付と時刻を time.Time 型に変換
 		layout := "2006/01/02 15:04"
-		dt, err := time.Parse(layout, fmt.Sprintf("%s %s", dateStr, timeStr))
+		dt, err := time.ParseInLocation(layout, fmt.Sprintf("%s %s", dateStr, timeStr), time.FixedZone("Asia/Tokyo", 9*3600))
 		if err != nil {
 			return time.Time{}, fmt.Errorf("日付と時刻の変換に失敗しました: %w", err)
 		}

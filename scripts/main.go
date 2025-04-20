@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	toukibo_parser "github.com/tychy/toukibo-parser"
 )
@@ -57,6 +58,7 @@ func mainRun() error {
 
 	stock := h.GetHoujinStock()
 
+	fmt.Println("ToukiboCreateAt: " + h.GetToukiboCreatedAt().Format(time.RFC3339))
 	fmt.Println("HoujinNumber: " + h.GetHoujinNumber())
 	fmt.Println("HoujinKaku: " + h.GetHoujinKaku())
 	fmt.Println("HoujinName: " + h.GetHoujinName())
