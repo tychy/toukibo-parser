@@ -36,11 +36,11 @@ func (h *HoujinBody) String() string {
 	return out
 }
 
-func (h *HoujinBody) GetHoujinKaku() (HoujinkakuType, error) {
+func (h *HoujinBody) GetHoujinKaku() HoujinkakuType {
 	if h.HoujinKaku == HoujinKakuUnknown {
-		return HoujinKakuUnknown, fmt.Errorf("not found houjin kaku")
+		return HoujinKakuUnknown
 	}
-	return h.HoujinKaku, nil
+	return h.HoujinKaku
 }
 
 func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
@@ -134,10 +134,7 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 		return res, nil
 	}
 
-	houjinKaku, err := h.GetHoujinKaku()
-	if err != nil {
-		return nil, err
-	}
+	houjinKaku := h.GetHoujinKaku()
 
 	// 特定目的会社、有限会社は取締役が代表となる
 	if houjinKaku == HoujinKakuYugen || houjinKaku == HoujinKakuTokuteiMokuteki {
