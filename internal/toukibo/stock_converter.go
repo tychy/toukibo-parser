@@ -93,6 +93,10 @@ func GetHoujinStock(stock string) HoujinStock {
 			continue
 		}
 
+		// trim （%d）
+		// sample1042用のハック
+		stock = regexp.MustCompile(`（[0-9]+）`).ReplaceAllString(stock, "")
+
 		// *優先株式 or *種類株式で始まる場合
 		pattern := fmt.Sprintf("([%s]+-[0-9]種優先株式|[%s]+[0-9]種優先株式|[%s]+[0-9]優先株式|[%s]+優先株式|[%s]+種類株式|[%s]+種株式)",
 			ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern)
