@@ -807,7 +807,6 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 	case string:
 		return Value{r, parent, x}
 	default:
-		// panic(fmt.Errorf("unexpected value type %T in resolve", x))
 		fmt.Sprintf("unexpected value type %T in resolve", x)
 		return Value{}
 	}

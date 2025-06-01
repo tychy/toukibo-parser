@@ -85,31 +85,31 @@ Reading:
 				continue
 			case "currentdict":
 				if len(dicts) == 0 {
-					panic("no current dictionary")
+					continue // skip - no current dictionary
 				}
 				stk.Push(Value{nil, objptr{}, dicts[len(dicts)-1]})
 				continue
 			case "begin":
 				d := stk.Pop()
 				if d.Kind() != Dict {
-					panic("cannot begin non-dict")
+					continue // skip - cannot begin non-dict
 				}
 				dicts = append(dicts, d.data.(dict))
 				continue
 			case "end":
 				if len(dicts) <= 0 {
-					panic("mismatched begin/end")
+					continue // skip - mismatched begin/end
 				}
 				dicts = dicts[:len(dicts)-1]
 				continue
 			case "def":
 				if len(dicts) <= 0 {
-					panic("def without open dict")
+					continue // skip - def without open dict
 				}
 				val := stk.Pop()
 				key, ok := stk.Pop().data.(name)
 				if !ok {
-					panic("def of non-name")
+					continue // skip - def of non-name
 				}
 				dicts[len(dicts)-1][key] = val.data
 				continue
