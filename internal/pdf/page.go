@@ -70,10 +70,16 @@ func (r *Reader) GetPlainText() (reader io.Reader, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if pages == 0 {
+		return nil, fmt.Errorf("PDF has no pages")
+	}
 	var buf bytes.Buffer
 	fonts := make(map[string]*Font)
 	for i := 1; i <= pages; i++ {
 		p := r.Page(i)
+		if p.V.IsNull() {
+			return nil, fmt.Errorf("failed to get page %d", i)
+		}
 		for _, name := range p.Fonts() { // cache fonts so we don't continually parse charmap
 			if _, ok := fonts[name]; !ok {
 				f := p.Font(name)

@@ -41,7 +41,7 @@ func getValue(s string) (string, error) {
 	var value string
 	var three []string // 登記日など
 
-	for _, l := range extractLines(s) {
+	for _, l := range ExtractLines(s) {
 		_, remain := getPartOne(l)
 		b, c := getPartTwo(remain)
 		value += trimLeadingTrailingSpace(b)
@@ -131,7 +131,7 @@ func normalizeExecutiveName(s string) string {
 
 func getMultipleExecutiveNamesAndPositions(s string) (result []struct{ Name, Position string }, three []string) {
 	var onNameAndPos bool
-	for _, l := range extractLines(s) {
+	for _, l := range ExtractLines(s) {
 		_, remain := getPartOne(l)
 		b, c := getPartTwo(remain)
 		three = append(three, c)
@@ -180,7 +180,7 @@ func getMultipleExecutiveNamesAndPositions(s string) (result []struct{ Name, Pos
 }
 
 // ┃ * ┃ or ┃ * ┨ の中身を抽出
-func extractLines(s string) []string {
+func ExtractLines(s string) []string {
 	var res []string
 	cur := ""
 	for _, r := range s {
@@ -224,6 +224,121 @@ func splitThree(s string) (string, string, string) {
 	return trimLeadingTrailingSpace(partOne), trimLeadingTrailingSpace(partTwo), trimLeadingTrailingSpace(partThree)
 }
 
+func extractExecutiveInfo(part string) ([]HoujinExecutiveValue, []string) {
+	posAndNames, three := getMultipleExecutiveNamesAndPositions(part)
+	evs := make([]HoujinExecutiveValue, 0, len(posAndNames))
+	
+	for _, posAndName := range posAndNames {
+		ev := HoujinExecutiveValue{
+			IsValid:  true,
+			Name:     posAndName.Name,
+			Position: posAndName.Position,
+		}
+		evs = append(evs, ev)
+	}
+	
+	return evs, three
+}
+
+func extractDates(three []string) (registerAt, resignedAt string) {
+	for _, t := range three {
+		if at, _ := getRegisterAt(t); at != "" {
+			registerAt = at
+		}
+		if at, _ := getResignedAt(t); at != "" {
+			resignedAt = at
+		}
+	}
+	return
+}
+
+func applyDatesToExecutives(evs []HoujinExecutiveValue, three []string) {
+	registerAt, resignedAt := extractDates(three)
+	
+	if registerAt != "" {
+		for i := range evs {
+			evs[i].RegisterAt = registerAt
+		}
+	}
+	if resignedAt != "" {
+		for i := range evs {
+			evs[i].ResignedAt = resignedAt
+			evs[i].IsValid = false
+		}
+	}
+}
+
+func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int, 
+	currentEvs []HoujinExecutiveValue, three []string, registerAt, resignedAt string) {
+	
+	if idx == 0 {
+		return
+	}
+	
+	if len(currentEvs) == 0 {
+		// 役員がないのに登記日がある場合は前の役員を対象にする
+		if registerAt != "" {
+			evsArr[idx-1].RegisterAt = registerAt
+			evsArr[idx-1].ResignedAt = resignedAt
+			evsArr[idx-1].IsValid = false
+		}
+		return
+	}
+	
+	if len(currentEvs) == 1 {
+		handleSingleExecutive(evsArr, idx, currentEvs[0], three)
+	}
+}
+
+func handleSingleExecutive(evsArr HoujinExecutiveValueArray, idx int, 
+	currentEv HoujinExecutiveValue, three []string) {
+	
+	prev := &evsArr[idx-1]
+	
+	// 同一役員チェック
+	if prev.Name == currentEv.Name && prev.Position == currentEv.Position {
+		prev.IsValid = false
+		return
+	}
+	
+	joinedThree := strings.Join(three, "")
+	
+	// 重任チェック
+	if strings.Contains(joinedThree, "重任") && prev.Position == currentEv.Position {
+		prev.IsValid = false
+		return
+	}
+	
+	// 氏名変更チェック
+	if isNameChange(joinedThree, prev.Name) {
+		prev.IsValid = false
+		return
+	}
+	
+	// 更正チェック
+	if strings.Contains(joinedThree, "更正") {
+		prev.IsValid = false
+		return
+	}
+}
+
+func isNameChange(text, name string) bool {
+	// 氏名変更の各種パターンをチェック
+	patterns := []string{
+		name + "の氏変更",
+		name + "の氏名変更",
+		name + "の名称変更",
+		name + "の名",
+	}
+	
+	for _, pattern := range patterns {
+		if strings.Contains(text, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
 func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	if DebugOn {
 		PrintBar()
@@ -236,93 +351,36 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	var idx int
 	for _, p := range parts {
 		if DebugOn {
-			PrintSlice(extractLines(p))
+			PrintSlice(ExtractLines(p))
 		}
 
-		var evs []HoujinExecutiveValue
-
-		// 役員名、役職を取得
-		posAndNames, three := getMultipleExecutiveNamesAndPositions(p)
-		for _, posAndName := range posAndNames {
-			ev := HoujinExecutiveValue{
-				IsValid:  true,
-				Name:     posAndName.Name,
-				Position: posAndName.Position,
-			}
-			evs = append(evs, ev)
+		// 役員情報の抽出
+		evs, three := extractExecutiveInfo(p)
+		
+		// 日付情報の適用
+		applyDatesToExecutives(evs, three)
+		
+		// 日付だけ抽出（前の役員処理用）
+		registerAt, resignedAt := extractDates(three)
+		
+		// 前の役員との関係処理
+		handlePreviousExecutiveRelation(evsArr, idx, evs, three, registerAt, resignedAt)
+		
+		// 結果の更新
+		if len(evs) > 0 {
+			idx += len(evs)
+			evsArr = append(evsArr, evs...)
+		} else if idx > 0 && registerAt != "" {
+			// 役員がないのに登記日がある場合は前の役員処理は上で完了しているので、ここではスキップ
+			continue
 		}
-
-		// 登記日、辞任日を取得
-		var registerAt, resignedAt string
-		for _, t := range three {
-			if at, _ := getRegisterAt(t); at != "" {
-				registerAt = at
-			}
-			if at, _ := getResignedAt(t); at != "" {
-				resignedAt = at
-			}
-		}
-		if registerAt != "" {
-			for i := range evs {
-				evs[i].RegisterAt = registerAt
-			}
-		}
-		if resignedAt != "" {
-			for i := range evs {
-				evs[i].ResignedAt = resignedAt
-				evs[i].IsValid = false
-			}
-		}
-
-		if idx > 0 {
-			if len(evs) == 0 {
-				if registerAt != "" {
-					evsArr[idx-1].RegisterAt = registerAt
-					evsArr[idx-1].ResignedAt = resignedAt
-					evsArr[idx-1].IsValid = false
-				}
-				continue
-			}
-
-			// 簡単のために、一つの欄に複数の役員情報が記載されている場合は無効処理等をスキップしている
-			if len(evs) == 1 {
-				// 同じ氏名、役職の役員が連続している場合、前の役員を無効にする
-				if evsArr[idx-1].Name == evs[0].Name && evsArr[idx-1].Position == evs[0].Position {
-					evsArr[idx-1].IsValid = false
-				}
-
-				joinedThree := strings.Join(three, "")
-				if strings.Contains(joinedThree, "重任") &&
-					evsArr[idx-1].Position == evs[0].Position { // sample788用のハック
-					evsArr[idx-1].IsValid = false
-				}
-
-				// sample 30, 89, 106用のハック
-				// XXXXの氏/名称変更がある場合、その前の役員は無効にする
-				if strings.Contains(joinedThree, evsArr[idx-1].Name+"の氏変更") ||
-					strings.Contains(joinedThree, evsArr[idx-1].Name+"の氏名変更") ||
-					strings.Contains(joinedThree, evsArr[idx-1].Name+"の名称変更") ||
-					strings.Contains(joinedThree, evsArr[idx-1].Name+"の名") {
-					evsArr[idx-1].IsValid = false
-				}
-
-				// sample1385用のハック
-				// 平成２９年　８月２４日更正の場合、その前の役員は無効にする
-				if strings.Contains(joinedThree, "更正") {
-					evsArr[idx-1].IsValid = false
-				}
-
-			}
-		}
-
-		idx += len(evs)
-		evsArr = append(evsArr, evs...)
 	}
+	
 	if DebugOn {
 		fmt.Println(evsArr)
 	}
+	
 	return evsArr, nil
-
 }
 
 func (h *HoujinBody) ConsumeHoujinNumber(s string) bool {
@@ -414,7 +472,7 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 	}
 
 	var s2 string
-	for _, p := range extractLines(s) {
+	for _, p := range ExtractLines(s) {
 		_, b, _ := splitThree(p)
 		s2 += b
 	}
@@ -445,15 +503,102 @@ func (h *HoujinBody) ConsumeHoujinContinuedAt(s string) bool {
 	return false
 }
 
+func (h *HoujinBody) shouldSkipField(s string) bool {
+	skipKeywords := []string{
+		"発行可能株式総数", "┃目　的", "┃目的等",
+		"出資１口の金額", "出資の総口数", "出資払込の方法",
+		"株式の譲渡制限", "株券を発行する旨",
+		"取締役等の会社", "非業務執行取締役",
+		"取締役会設置会社", "監査役設置会社", "会計監査人設置会",
+		"解散の事由", "監査役会設置会社",
+		"地　区", "支　店", "従たる事務所",
+	}
+	
+	for _, keyword := range skipKeywords {
+		if strings.Contains(s, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func (h *HoujinBody) processHoujinName(s string) error {
+	v, err := GetHoujinValue(s)
+	if err != nil {
+		return err
+	}
+	h.HoujinName = v
+	return nil
+}
+
+func (h *HoujinBody) processHoujinAddress(s string) error {
+	v, err := GetHoujinValue(s)
+	if err != nil {
+		return err
+	}
+	h.HoujinAddress = v
+	return nil
+}
+
+func (h *HoujinBody) processHoujinCapital(s string) error {
+	v, err := GetHoujinValue(s)
+	if err != nil {
+		return err
+	}
+	h.HoujinCapital = v
+	
+	// sample126, sample508用のハック
+	// 金０円（債務超過額 金２８７３万８７５４円）のような場合、資本金は金0円とする
+	for i, v := range h.HoujinCapital {
+		if strings.Contains(v.Value, "債務超過額") {
+			pattern := fmt.Sprintf("金([%s]+)円", ZenkakuNumberPattern)
+			regex := regexp.MustCompile(pattern)
+			matches := regex.FindStringSubmatch(v.Value)
+			if len(matches) > 0 {
+				h.HoujinCapital[i].Value = "金" + matches[1] + "円"
+			}
+		}
+	}
+	return nil
+}
+
+func (h *HoujinBody) processHoujinStock(s string) error {
+	v, err := GetHoujinValue(s)
+	if err != nil {
+		return err
+	}
+	h.HoujinStock = v
+	return nil
+}
+
+func (h *HoujinBody) processHoujinToukiRecord(s string) error {
+	v, err := GetHoujinValue(s)
+	if err != nil {
+		return err
+	}
+	h.HoujinToukiRecord = v
+	return nil
+}
+
+func (h *HoujinBody) processHoujinExecutive(s string) error {
+	executives := splitExecutives(s)
+	h.HoujinExecutive = make([]HoujinExecutiveValueArray, len(executives))
+	for i, e := range executives {
+		if strings.Contains(e, "監査役の監査の範囲を会計に関するものに限定") {
+			continue
+		}
+		
+		v, err := GetHoujinExecutiveValue(e)
+		if err != nil {
+			return err
+		}
+		h.HoujinExecutive[i] = v
+	}
+	return nil
+}
+
 func (h *HoujinBody) ParseBodyMain(s string) error {
-	if strings.Contains(s, "発行可能株式総数") || strings.Contains(s, "┃目　的") || strings.Contains(s, "┃目的等") ||
-		strings.Contains(s, "出資１口の金額") || strings.Contains(s, "出資の総口数") || strings.Contains(s, "出資払込の方法") ||
-		strings.Contains(s, "株式の譲渡制限") || strings.Contains(s, "株券を発行する旨") ||
-		strings.Contains(s, "取締役等の会社") || strings.Contains(s, "非業務執行取締役") ||
-		strings.Contains(s, "取締役会設置会社") || strings.Contains(s, "監査役設置会社") || strings.Contains(s, "会計監査人設置会") ||
-		strings.Contains(s, "解散の事由") || strings.Contains(s, "監査役会設置会社") ||
-		strings.Contains(s, "地　区") || strings.Contains(s, "支　店") || strings.Contains(s, "従たる事務所") {
-		// skip
+	if h.shouldSkipField(s) {
 		return nil
 	}
 
@@ -462,22 +607,11 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 	}
 
 	if h.ConsumeHoujinName(s) {
-		v, err := GetHoujinValue(s)
-		if err != nil {
-			return err
-		}
-
-		h.HoujinName = v
-		return nil
+		return h.processHoujinName(s)
 	}
 
 	if h.ConsumeHoujinAddress(s) {
-		v, err := GetHoujinValue(s)
-		if err != nil {
-			return err
-		}
-		h.HoujinAddress = v
-		return nil
+		return h.processHoujinAddress(s)
 	}
 	if h.ConsumeHoujinKoukoku(s) {
 		return nil
@@ -495,59 +629,17 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		return nil
 	}
 	if h.ConsumeHoujinCapital(s) {
-		v, err := GetHoujinValue(s)
-		if err != nil {
-			return err
-		}
-		h.HoujinCapital = v
-
-		// sample126, sample508用のハック
-		// 金０円（債務超過額 金２８７３万８７５４円）のような場合、資本金は金0円とする
-
-		for i, v := range h.HoujinCapital {
-			if strings.Contains(v.Value, "債務超過額") {
-				pattern := fmt.Sprintf("金([%s]+)円", ZenkakuNumberPattern)
-				regex := regexp.MustCompile(pattern)
-				matches := regex.FindStringSubmatch(v.Value)
-				if len(matches) > 0 {
-					h.HoujinCapital[i].Value = "金" + matches[1] + "円"
-				}
-			}
-		}
-		return nil
+		return h.processHoujinCapital(s)
 	}
 	if h.ConsumeHoujinStock(s) {
-		v, err := GetHoujinValue(s)
-		if err != nil {
-			return err
-		}
-		h.HoujinStock = v
-		return nil
+		return h.processHoujinStock(s)
 	}
 
 	if h.ConsumeHoujinToukiRecord(s) {
-		v, err := GetHoujinValue(s)
-		if err != nil {
-			return err
-		}
-		h.HoujinToukiRecord = v
-		return nil
+		return h.processHoujinToukiRecord(s)
 	}
 	if h.ConsumeHoujinExecutive(s) {
-		executives := splitExecutives(s)
-		h.HoujinExecutive = make([]HoujinExecutiveValueArray, len(executives))
-		for i, e := range executives {
-			if strings.Contains(e, "監査役の監査の範囲を会計に関するものに限定") {
-				continue
-			}
-
-			v, err := GetHoujinExecutiveValue(e)
-			if err != nil {
-				return err
-			}
-			h.HoujinExecutive[i] = v
-		}
-		return nil
+		return h.processHoujinExecutive(s)
 	}
 	return nil
 }

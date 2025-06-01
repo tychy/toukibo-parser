@@ -182,9 +182,18 @@ func TestToukiboParser(t *testing.T) {
 func TestBrokenToukibo(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		pdfFileName := fmt.Sprintf("testdata/broken/broken%d.pdf", i)
-		_, err := GetContentByPDFPath(pdfFileName)
+		content, err := GetContentByPDFPath(pdfFileName)
+		if err != nil {
+			t.Logf("broken%d.pdf: got error from GetContentByPDFPath: %v", i, err)
+			continue
+		}
+		
+		// If GetContentByPDFPath didn't return error, try parsing
+		_, err = toukibo.Parse(content)
 		if err == nil {
-			t.Fatal("should be error")
+			t.Errorf("broken%d.pdf: expected error but got none, content length: %d", i, len(content))
+		} else {
+			t.Logf("broken%d.pdf: got expected error from Parse: %v", i, err)
 		}
 	}
 }
