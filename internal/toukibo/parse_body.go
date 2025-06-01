@@ -55,21 +55,18 @@ func getValue(s string) (string, error) {
 }
 
 func getRegisterAt(s string) (string, error) {
-	pattern := fmt.Sprintf(`([%s]+)　*登記`, ZenkakuStringPattern)
-	regex := regexp.MustCompile(pattern)
-	matches := regex.FindStringSubmatch(s)
-	if len(matches) > 0 {
-		return trimAllSpace(matches[1]), nil
+	date, found := RegisterDateExtractor.Extract(s)
+	if found {
+		return trimAllSpace(date), nil
 	}
 	return "", fmt.Errorf("failed to get registerAt from %s", s)
 }
 
 func getResignedAt(s string) (string, error) {
-	pattern := fmt.Sprintf(`([%s]+)　*(辞任|退任|死亡|抹消|廃止|解任|退社)`, ZenkakuStringPattern)
-	regex := regexp.MustCompile(pattern)
-	matches := regex.FindStringSubmatch(s)
-	if len(matches) > 0 {
-		return trimAllSpace(matches[1]), nil
+	// 辞任/退任の他に死亡、抹消、廃止、解任、退社も含める
+	date, found := ExtractDateWithSuffix(s, []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社"})
+	if found {
+		return trimAllSpace(date), nil
 	}
 	return "", fmt.Errorf("failed to get resignedAt from %s", s)
 }
@@ -455,6 +452,7 @@ func (h *HoujinBody) ConsumeHoujinCreatedAt(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinBankruptedAt(s string) bool {
+	// 破産日は特殊なフォーマットなので専用パターンを使う
 	pattern := fmt.Sprintf("┃破　産　*│　*([%s]+日)([%s]*)", ZenkakuStringPattern, ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)
 
@@ -491,7 +489,7 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 }
 
 func (h *HoujinBody) ConsumeHoujinContinuedAt(s string) bool {
-	// ex 令和2年7月1日会社継続
+	// 継続日も特殊なフォーマット
 	pattern := fmt.Sprintf("┃会社継続　*│　*([%s]+日)会社継続", ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)
 
@@ -522,28 +520,28 @@ func (h *HoujinBody) shouldSkipField(s string) bool {
 	return false
 }
 
-func (h *HoujinBody) processHoujinName(s string) error {
+func (h *HoujinBody) processHoujinName(s string) bool {
 	v, err := GetHoujinValue(s)
 	if err != nil {
-		return err
+		return false
 	}
 	h.HoujinName = v
-	return nil
+	return true
 }
 
-func (h *HoujinBody) processHoujinAddress(s string) error {
+func (h *HoujinBody) processHoujinAddress(s string) bool {
 	v, err := GetHoujinValue(s)
 	if err != nil {
-		return err
+		return false
 	}
 	h.HoujinAddress = v
-	return nil
+	return true
 }
 
-func (h *HoujinBody) processHoujinCapital(s string) error {
+func (h *HoujinBody) processHoujinCapital(s string) bool {
 	v, err := GetHoujinValue(s)
 	if err != nil {
-		return err
+		return false
 	}
 	h.HoujinCapital = v
 	
@@ -559,28 +557,28 @@ func (h *HoujinBody) processHoujinCapital(s string) error {
 			}
 		}
 	}
-	return nil
+	return true
 }
 
-func (h *HoujinBody) processHoujinStock(s string) error {
+func (h *HoujinBody) processHoujinStock(s string) bool {
 	v, err := GetHoujinValue(s)
 	if err != nil {
-		return err
+		return false
 	}
 	h.HoujinStock = v
-	return nil
+	return true
 }
 
-func (h *HoujinBody) processHoujinToukiRecord(s string) error {
+func (h *HoujinBody) processHoujinToukiRecord(s string) bool {
 	v, err := GetHoujinValue(s)
 	if err != nil {
-		return err
+		return false
 	}
 	h.HoujinToukiRecord = v
-	return nil
+	return true
 }
 
-func (h *HoujinBody) processHoujinExecutive(s string) error {
+func (h *HoujinBody) processHoujinExecutive(s string) bool {
 	executives := splitExecutives(s)
 	h.HoujinExecutive = make([]HoujinExecutiveValueArray, len(executives))
 	for i, e := range executives {
@@ -590,11 +588,11 @@ func (h *HoujinBody) processHoujinExecutive(s string) error {
 		
 		v, err := GetHoujinExecutiveValue(e)
 		if err != nil {
-			return err
+			return false
 		}
 		h.HoujinExecutive[i] = v
 	}
-	return nil
+	return true
 }
 
 func (h *HoujinBody) ParseBodyMain(s string) error {
@@ -606,12 +604,19 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		return nil
 	}
 
+	// レガシー互換性のため、Consume系メソッドを残しつつ、processメソッドも呼ぶ
 	if h.ConsumeHoujinName(s) {
-		return h.processHoujinName(s)
+		if !h.processHoujinName(s) {
+			return fmt.Errorf("failed to process houjin name")
+		}
+		return nil
 	}
 
 	if h.ConsumeHoujinAddress(s) {
-		return h.processHoujinAddress(s)
+		if !h.processHoujinAddress(s) {
+			return fmt.Errorf("failed to process houjin address")
+		}
+		return nil
 	}
 	if h.ConsumeHoujinKoukoku(s) {
 		return nil
@@ -629,17 +634,29 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		return nil
 	}
 	if h.ConsumeHoujinCapital(s) {
-		return h.processHoujinCapital(s)
+		if !h.processHoujinCapital(s) {
+			return fmt.Errorf("failed to process houjin capital")
+		}
+		return nil
 	}
 	if h.ConsumeHoujinStock(s) {
-		return h.processHoujinStock(s)
+		if !h.processHoujinStock(s) {
+			return fmt.Errorf("failed to process houjin stock")
+		}
+		return nil
 	}
 
 	if h.ConsumeHoujinToukiRecord(s) {
-		return h.processHoujinToukiRecord(s)
+		if !h.processHoujinToukiRecord(s) {
+			return fmt.Errorf("failed to process houjin touki record")
+		}
+		return nil
 	}
 	if h.ConsumeHoujinExecutive(s) {
-		return h.processHoujinExecutive(s)
+		if !h.processHoujinExecutive(s) {
+			return fmt.Errorf("failed to process houjin executive")
+		}
+		return nil
 	}
 	return nil
 }

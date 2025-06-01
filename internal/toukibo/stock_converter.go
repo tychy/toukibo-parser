@@ -7,38 +7,28 @@ import (
 )
 
 func GetStockNumber(s string) (int, string) {
-	sums := 0
-	cur := 0
-	foundKabu := false
-	for idx, v := range s {
-		if foundKabu {
-			return sums, s[idx:]
+	// 株の位置を探す
+	kabuIndex := strings.Index(s, "株")
+	if kabuIndex == -1 {
+		// 株が見つからない場合
+		num, err := ParseJapaneseNumber(s, JapaneseNumberUnits)
+		if err != nil {
+			return 0, ""
 		}
-		if v >= '0' && v <= '9' {
-			cur = cur*10 + int(v-'0')
-			continue
-		}
-
-		switch v {
-		case '万':
-			sums += cur * 10000
-			cur = 0
-		case '億':
-			sums += cur * 100000000
-			cur = 0
-		case '兆':
-			sums += cur * 1000000000000
-			cur = 0
-		case '株':
-			sums += cur
-			cur = 0 // 意味はない
-			foundKabu = true
-			// 発行済株式の総数４万８２４９株各種の株式の数普通株式　　　３万２４９株Ａ種優先株式　１万株Ｂ種優先株式　８０００株
-			//　のようなパターンでは最初の株でReturnさせる
-			continue
-		}
+		return num, ""
 	}
-	return sums, ""
+	
+	// 株までの部分を抽出
+	numPart := s[:kabuIndex]
+	remaining := s[kabuIndex+len("株"):]
+	
+	// 数値をパース
+	num, err := ParseJapaneseNumber(numPart, JapaneseNumberUnits)
+	if err != nil {
+		return 0, remaining
+	}
+	
+	return num, remaining
 }
 
 func GetHoujinStock(stock string) HoujinStock {
