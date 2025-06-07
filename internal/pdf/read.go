@@ -145,6 +145,9 @@ func NewReaderEncrypted(f io.ReaderAt, size int64, pw func() string) (*Reader, e
 	}
 	pos := end - endChunk + int64(i)
 	b := newBuffer(io.NewSectionReader(f, pos, end-pos), pos)
+	if b.hasError() {
+		return nil, b.err
+	}
 	if b.readToken() != keyword("startxref") {
 		return nil, fmt.Errorf("malformed PDF file: missing startxref")
 	}
@@ -192,7 +195,13 @@ func (r *Reader) Trailer() Value {
 }
 
 func readXref(r *Reader, b *buffer) ([]xref, objptr, dict, error) {
+	if b.hasError() {
+		return nil, objptr{}, nil, b.err
+	}
 	tok := b.readToken()
+	if b.hasError() {
+		return nil, objptr{}, nil, b.err
+	}
 	if tok == keyword("xref") {
 		return readXrefTable(r, b)
 	}
@@ -408,7 +417,13 @@ func readXrefTable(r *Reader, b *buffer) ([]xref, objptr, dict, error) {
 
 func readXrefTableData(b *buffer, table []xref) ([]xref, error) {
 	for {
+		if b.hasError() {
+			return nil, b.err
+		}
 		tok := b.readToken()
+		if b.hasError() {
+			return nil, b.err
+		}
 		if tok == keyword("trailer") {
 			break
 		}
@@ -736,15 +751,15 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 		Search:
 			for {
 				if strm.Kind() != Stream {
-					panic("not a stream")
+					return Value{} // not a stream
 				}
 				if strm.Key("Type").Name() != "ObjStm" {
-					panic("not an object stream")
+					return Value{} // not an object stream
 				}
 				n := int(strm.Key("N").Int64())
 				first := strm.Key("First").Int64()
 				if first == 0 {
-					panic("missing First")
+					return Value{} // missing First
 				}
 				b := newBuffer(strm.Reader(), 0)
 				b.allowEOF = true
@@ -762,7 +777,7 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 				}
 				ext := strm.Key("Extends")
 				if ext.Kind() != Stream {
-					panic("cannot find object in stream")
+					return Value{} // cannot find object in stream
 				}
 				strm = ext
 			}
@@ -776,11 +791,10 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 			}
 			def, ok := obj.(objdef)
 			if !ok {
-				panic(fmt.Errorf("loading %v: found %T instead of objdef", ptr, obj))
-				//return Value{}
+				return Value{} // loading error: found wrong type instead of objdef
 			}
 			if def.ptr != ptr {
-				panic(fmt.Errorf("loading %v: found %v", ptr, def.ptr))
+				return Value{} // loading error: found wrong object pointer
 			}
 			x = def.obj
 		}
@@ -793,7 +807,6 @@ func (r *Reader) resolve(parent objptr, x interface{}) Value {
 	case string:
 		return Value{r, parent, x}
 	default:
-		// panic(fmt.Errorf("unexpected value type %T in resolve", x))
 		fmt.Sprintf("unexpected value type %T in resolve", x)
 		return Value{}
 	}

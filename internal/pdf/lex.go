@@ -46,6 +46,7 @@ type buffer struct {
 	key         []byte
 	useAES      bool
 	objptr      objptr
+	err         error     // last error encountered
 }
 
 // newBuffer returns a new buffer reading from r at the given offset.
@@ -69,7 +70,7 @@ func (b *buffer) seek(offset int64) {
 func (b *buffer) readByte() byte {
 	if b.pos >= len(b.buf) {
 		b.reload()
-		if b.pos >= len(b.buf) {
+		if b.err != nil || b.pos >= len(b.buf) {
 			return '\n'
 		}
 	}
@@ -92,7 +93,13 @@ func (b *buffer) reload() {
 			b.eof = true
 			return
 		}
-		panic(b.errorf("malformed PDF: reading at offset %d: %v", b.offset, err))
+		b.err = &PDFError{
+			Op:      "reload",
+			Offset:  b.offset,
+			Message: "reading failed",
+			Err:     err,
+		}
+		return
 	}
 	b.offset += int64(n)
 	b.buf = b.buf[:n]
@@ -100,10 +107,12 @@ func (b *buffer) reload() {
 }
 
 func (b *buffer) seekForward(offset int64) {
-	for b.offset < offset {
+	for b.offset < offset && b.err == nil {
 		b.reload()
 	}
-	b.pos = len(b.buf) - int(b.offset-offset)
+	if b.err == nil {
+		b.pos = len(b.buf) - int(b.offset-offset)
+	}
 }
 
 func (b *buffer) readOffset() int64 {
@@ -114,6 +123,10 @@ func (b *buffer) unreadByte() {
 	if b.pos > 0 {
 		b.pos--
 	}
+}
+
+func (b *buffer) hasError() bool {
+	return b.err != nil
 }
 
 func (b *buffer) unreadToken(t token) {
@@ -131,12 +144,15 @@ func (b *buffer) readToken() token {
 	c := b.readByte()
 	for {
 		if isSpace(c) {
-			if b.eof {
+			if b.eof || b.hasError() {
 				return io.EOF
 			}
 			c = b.readByte()
 		} else if c == '%' {
 			for c != '\r' && c != '\n' {
+				if b.eof || b.hasError() {
+					return io.EOF
+				}
 				c = b.readByte()
 			}
 		} else {
@@ -183,6 +199,9 @@ func (b *buffer) readHexString() token {
 	tmp := b.tmp[:0]
 	for {
 	Loop:
+		if b.eof || b.hasError() {
+			return b.errorf("unexpected EOF in hex string")
+		}
 		c := b.readByte()
 		if c == '>' {
 			break
@@ -191,6 +210,9 @@ func (b *buffer) readHexString() token {
 			goto Loop
 		}
 	Loop2:
+		if b.eof || b.hasError() {
+			return b.errorf("unexpected EOF in hex string")
+		}
 		c2 := b.readByte()
 		if isSpace(c2) {
 			goto Loop2
@@ -223,6 +245,9 @@ func (b *buffer) readLiteralString() token {
 	depth := 1
 Loop:
 	for {
+		if b.eof || b.hasError() {
+			return b.errorf("unexpected EOF in literal string")
+		}
 		c := b.readByte()
 		switch c {
 		default:
@@ -284,13 +309,24 @@ Loop:
 func (b *buffer) readName() token {
 	tmp := b.tmp[:0]
 	for {
+		if b.eof || b.hasError() {
+			break
+		}
 		c := b.readByte()
 		if isDelim(c) || isSpace(c) {
 			b.unreadByte()
 			break
 		}
 		if c == '#' {
-			x := unhex(b.readByte())<<4 | unhex(b.readByte())
+			if b.eof || b.hasError() {
+				return b.errorf("unexpected EOF in name escape")
+			}
+			b1 := b.readByte()
+			if b.eof || b.hasError() {
+				return b.errorf("unexpected EOF in name escape")
+			}
+			b2 := b.readByte()
+			x := unhex(b1)<<4 | unhex(b2)
 			if x < 0 {
 				// b.errorf("malformed name")
 				fmt.Sprint(b.errorf("malformed name"))
@@ -307,6 +343,9 @@ func (b *buffer) readName() token {
 func (b *buffer) readKeyword() token {
 	tmp := b.tmp[:0]
 	for {
+		if b.eof || b.hasError() {
+			break
+		}
 		c := b.readByte()
 		if isDelim(c) || isSpace(c) {
 			b.unreadByte()
@@ -411,7 +450,13 @@ type objdef struct {
 }
 
 func (b *buffer) readObject() (object, error) {
+	if b.hasError() {
+		return nil, b.err
+	}
 	tok := b.readToken()
+	if b.hasError() {
+		return nil, b.err
+	}
 	if kw, ok := tok.(keyword); ok {
 		switch kw {
 		case "null":
@@ -473,6 +518,9 @@ func (b *buffer) readObject() (object, error) {
 func (b *buffer) readArray() object {
 	var x array
 	for {
+		if b.hasError() {
+			return b.err
+		}
 		tok := b.readToken()
 		if tok == nil || tok == keyword("]") {
 			break
@@ -490,6 +538,9 @@ func (b *buffer) readArray() object {
 func (b *buffer) readDict() object {
 	x := make(dict)
 	for {
+		if b.hasError() {
+			return b.err
+		}
 		tok := b.readToken()
 		if tok == nil || tok == keyword(">>") {
 			break

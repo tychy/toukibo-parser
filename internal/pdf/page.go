@@ -70,10 +70,16 @@ func (r *Reader) GetPlainText() (reader io.Reader, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if pages == 0 {
+		return nil, fmt.Errorf("PDF has no pages")
+	}
 	var buf bytes.Buffer
 	fonts := make(map[string]*Font)
 	for i := 1; i <= pages; i++ {
 		p := r.Page(i)
+		if p.V.IsNull() {
+			return nil, fmt.Errorf("failed to get page %d", i)
+		}
 		for _, name := range p.Fonts() { // cache fonts so we don't continually parse charmap
 			if _, ok := fonts[name]; !ok {
 				f := p.Font(name)
@@ -379,7 +385,8 @@ func readCmap(toUnicode Value) *cmap {
 			n = int(stk.Pop().Int64())
 		case "endbfchar":
 			if n < 0 {
-				panic("missing beginbfchar")
+				ok = false
+				return
 			}
 			for i := 0; i < n; i++ {
 				repl, orig := stk.Pop().RawString(), stk.Pop().RawString()
@@ -389,7 +396,8 @@ func readCmap(toUnicode Value) *cmap {
 			n = int(stk.Pop().Int64())
 		case "endbfrange":
 			if n < 0 {
-				panic("missing beginbfrange")
+				ok = false
+				return
 			}
 			for i := 0; i < n; i++ {
 				dst, srcHi, srcLo := stk.Pop(), stk.Pop().RawString(), stk.Pop().RawString()
@@ -492,10 +500,7 @@ func (p Page) GetPlainText(fonts map[string]*Font) (result string, err error) {
 	var textBuilder bytes.Buffer
 	showText := func(s string) {
 		for _, ch := range enc.Decode(s) {
-			_, err := textBuilder.WriteRune(ch)
-			if err != nil {
-				panic(err)
-			}
+			textBuilder.WriteRune(ch)
 		}
 	}
 
@@ -513,7 +518,7 @@ func (p Page) GetPlainText(fonts map[string]*Font) (result string, err error) {
 			showText("\n")
 		case "Tf": // set text font and size
 			if len(args) != 2 {
-				panic("bad TL")
+				return // skip invalid operator
 			}
 			if font, ok := fonts[args[0].Name()]; ok {
 				enc = font.Encoder()
@@ -522,17 +527,17 @@ func (p Page) GetPlainText(fonts map[string]*Font) (result string, err error) {
 			}
 		case "\"": // set spacing, move to next line, and show text
 			if len(args) != 3 {
-				panic("bad \" operator")
+				return // skip invalid operator
 			}
 			fallthrough
 		case "'": // move to next line and show text
 			if len(args) != 1 {
-				panic("bad ' operator")
+				return // skip invalid operator
 			}
 			fallthrough
 		case "Tj": // show text
 			if len(args) != 1 {
-				panic("bad Tj operator")
+				return // skip invalid operator
 			}
 			showText(args[0].RawString())
 		case "TJ": // show text, allowing individual glyph positioning
@@ -573,10 +578,7 @@ func (p Page) GetTextByColumn() (Columns, error) {
 		var textBuilder bytes.Buffer
 
 		for _, ch := range enc.Decode(s) {
-			_, err := textBuilder.WriteRune(ch)
-			if err != nil {
-				panic(err)
-			}
+			textBuilder.WriteRune(ch)
 		}
 		text := Text{
 			S: textBuilder.String(),
@@ -642,10 +644,7 @@ func (p Page) GetTextByRow() (Rows, error) {
 	showText := func(enc TextEncoding, currentX, currentY float64, s string) {
 		var textBuilder bytes.Buffer
 		for _, ch := range enc.Decode(s) {
-			_, err := textBuilder.WriteRune(ch)
-			if err != nil {
-				panic(err)
-			}
+			textBuilder.WriteRune(ch)
 		}
 
 		// if DebugOn {
@@ -720,7 +719,7 @@ func (p Page) walkTextBlocks(walker func(enc TextEncoding, x, y float64, s strin
 		case "T*": // move to start of next line
 		case "Tf": // set text font and size
 			if len(args) != 2 {
-				panic("bad TL")
+				return // skip invalid operator
 			}
 
 			if font, ok := fonts[args[0].Name()]; ok {
@@ -730,17 +729,17 @@ func (p Page) walkTextBlocks(walker func(enc TextEncoding, x, y float64, s strin
 			}
 		case "\"": // set spacing, move to next line, and show text
 			if len(args) != 3 {
-				panic("bad \" operator")
+				return // skip invalid operator
 			}
 			fallthrough
 		case "'": // move to next line and show text
 			if len(args) != 1 {
-				panic("bad ' operator")
+				return // skip invalid operator
 			}
 			fallthrough
 		case "Tj": // show text
 			if len(args) != 1 {
-				panic("bad Tj operator")
+				return // skip invalid operator
 			}
 
 			walker(enc, currentX, currentY, args[0].RawString())
@@ -813,7 +812,7 @@ func (p Page) Content() Content {
 
 		case "cm": // update g.CTM
 			if len(args) != 6 {
-				panic("bad g.Tm")
+				return // skip invalid operator
 			}
 			var m matrix
 			for i := 0; i < 6; i++ {
@@ -841,7 +840,7 @@ func (p Page) Content() Content {
 
 		case "re": // append rectangle to path
 			if len(args) != 4 {
-				panic("bad re")
+				return // skip invalid operator
 			}
 			x, y, w, h := args[0].Float64(), args[1].Float64(), args[2].Float64(), args[3].Float64()
 			rect = append(rect, Rect{Point{x, y}, Point{x + w, y + h}})
@@ -867,19 +866,19 @@ func (p Page) Content() Content {
 
 		case "Tc": // set character spacing
 			if len(args) != 1 {
-				panic("bad g.Tc")
+				return // skip invalid operator
 			}
 			g.Tc = args[0].Float64()
 
 		case "TD": // move text position and set leading
 			if len(args) != 2 {
-				panic("bad Td")
+				return // skip invalid operator
 			}
 			g.Tl = -args[1].Float64()
 			fallthrough
 		case "Td": // move text position
 			if len(args) != 2 {
-				panic("bad Td")
+				return // skip invalid operator
 			}
 			tx := args[0].Float64()
 			ty := args[1].Float64()
@@ -889,7 +888,7 @@ func (p Page) Content() Content {
 
 		case "Tf": // set text font and size
 			if len(args) != 2 {
-				panic("bad TL")
+				return // skip invalid operator
 			}
 			f := args[0].Name()
 			g.Tf = p.Font(f)
@@ -901,7 +900,7 @@ func (p Page) Content() Content {
 
 		case "\"": // set spacing, move to next line, and show text
 			if len(args) != 3 {
-				panic("bad \" operator")
+				return // skip invalid operator
 			}
 			g.Tw = args[0].Float64()
 			g.Tc = args[1].Float64()
@@ -909,7 +908,7 @@ func (p Page) Content() Content {
 			fallthrough
 		case "'": // move to next line and show text
 			if len(args) != 1 {
-				panic("bad ' operator")
+				return // skip invalid operator
 			}
 			x := matrix{{1, 0, 0}, {0, 1, 0}, {0, -g.Tl, 1}}
 			g.Tlm = x.mul(g.Tlm)
@@ -917,7 +916,7 @@ func (p Page) Content() Content {
 			fallthrough
 		case "Tj": // show text
 			if len(args) != 1 {
-				panic("bad Tj operator")
+				return // skip invalid operator
 			}
 			showText(args[0].RawString())
 
@@ -942,13 +941,13 @@ func (p Page) Content() Content {
 
 		case "TL": // set text leading
 			if len(args) != 1 {
-				panic("bad TL")
+				return // skip invalid operator
 			}
 			g.Tl = args[0].Float64()
 
 		case "Tm": // set text matrix and line matrix
 			if len(args) != 6 {
-				panic("bad g.Tm")
+				return // skip invalid operator
 			}
 			var m matrix
 			for i := 0; i < 6; i++ {
@@ -960,25 +959,25 @@ func (p Page) Content() Content {
 
 		case "Tr": // set text rendering mode
 			if len(args) != 1 {
-				panic("bad Tr")
+				return // skip invalid operator
 			}
 			g.Tmode = int(args[0].Int64())
 
 		case "Ts": // set text rise
 			if len(args) != 1 {
-				panic("bad Ts")
+				return // skip invalid operator
 			}
 			g.Trise = args[0].Float64()
 
 		case "Tw": // set word spacing
 			if len(args) != 1 {
-				panic("bad g.Tw")
+				return // skip invalid operator
 			}
 			g.Tw = args[0].Float64()
 
 		case "Tz": // set horizontal text scaling
 			if len(args) != 1 {
-				panic("bad Tz")
+				return // skip invalid operator
 			}
 			g.Th = args[0].Float64() / 100
 		}

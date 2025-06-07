@@ -11,3 +11,5 @@ out.txt
 .wrangler
 node_modules
 package-lock.json
+
+settings.local.json

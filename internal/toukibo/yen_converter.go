@@ -7,33 +7,11 @@ package toukibo
 
 // 上限は兆円まで
 func YenToNumber(yen string) int {
-	yen = ZenkakuToHankaku(yen)
-
-	sums := 0
-	cur := 0
-	for _, v := range yen {
-		if v == '金' {
-			continue
-		}
-		if v >= '0' && v <= '9' {
-			cur = cur*10 + int(v-'0')
-			continue
-		}
-
-		switch v {
-		case '万':
-			sums += cur * 10000
-			cur = 0
-		case '億':
-			sums += cur * 100000000
-			cur = 0
-		case '兆':
-			sums += cur * 1000000000000
-			cur = 0
-		case '円':
-			sums += cur
-			cur = 0
-		}
+	// 新しい共通関数を使用
+	result, err := ParseJapaneseNumberWithSuffix(yen, JapaneseNumberUnits, "円")
+	if err != nil {
+		// エラーの場合は0を返す（既存の動作を維持）
+		return 0
 	}
-	return sums
+	return result
 }
