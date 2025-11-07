@@ -1,6 +1,9 @@
 package toukibo
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type HoujinBody struct {
 	HoujinNumber       string
@@ -43,6 +46,49 @@ func (h *HoujinBody) GetHoujinKaku() HoujinkakuType {
 	return h.HoujinKaku
 }
 
+func postProcessResponsibilityChangesGlobal(evsArr []HoujinExecutiveValue) {
+	// 1. ResignedAtに「責任変更」が含まれている役員を無効化
+	for i := range evsArr {
+		if !evsArr[i].IsValid {
+			continue
+		}
+
+		if strings.Contains(evsArr[i].ResignedAt, "責任変更") {
+			evsArr[i].IsValid = false
+			if DebugOn {
+				fmt.Printf("Invalidating (resigned): %s %s\n", evsArr[i].Name, evsArr[i].Position)
+			}
+		}
+	}
+
+	// 2. 無限責任社員と有限責任社員の同一人物がいる場合、有限責任社員を無効化
+	//    （有限→無限への責任変更を想定）
+	for i := range evsArr {
+		if !evsArr[i].IsValid {
+			continue
+		}
+
+		if evsArr[i].Position == "無限責任社員" {
+			if DebugOn {
+				fmt.Printf("Found 無限責任社員: %s\n", evsArr[i].Name)
+			}
+			// 同じ名前の有限責任社員を探して無効化
+			for j := range evsArr {
+				if !evsArr[j].IsValid || i == j {
+					continue
+				}
+
+				if evsArr[j].Name == evsArr[i].Name && evsArr[j].Position == "有限責任社員" {
+					if DebugOn {
+						fmt.Printf("Invalidating 有限責任社員: %s (found matching 無限責任社員)\n", evsArr[j].Name)
+					}
+					evsArr[j].IsValid = false
+				}
+			}
+		}
+	}
+}
+
 func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
 	if len(h.HoujinExecutive) == 0 {
 		if h.HoujinDissolvedAt != "" {
@@ -52,14 +98,23 @@ func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
 		return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
 	}
 
-	var res []HoujinExecutiveValue
+	// まず全ての役員を集める
+	var all []HoujinExecutiveValue
 	for _, e := range h.HoujinExecutive {
-		for _, v := range e {
-			if v.IsValid {
-				res = append(res, v)
-			}
+		all = append(all, e...)
+	}
+
+	// 責任変更の後処理を全役員に対して実行
+	postProcessResponsibilityChangesGlobal(all)
+
+	// IsValidな役員のみを返す
+	var res []HoujinExecutiveValue
+	for _, v := range all {
+		if v.IsValid {
+			res = append(res, v)
 		}
 	}
+
 	if len(res) > 0 {
 		return res, nil
 	}
