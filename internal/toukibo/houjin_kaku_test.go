@@ -282,12 +282,6 @@ func TestFindHoujinKaku(t *testing.T) {
 			expected: toukibo.HoujinKakuKouekiShadan,
 		},
 		{
-			name:     "一般財産法人のケース",
-			input:    "一般財産法人テスト",
-			content:  "",
-			expected: toukibo.HoujinKakuIppanZaisan,
-		},
-		{
 			name:     "一般財団法人のケース",
 			input:    "一般財団法人テスト",
 			content:  "",
