@@ -11,9 +11,18 @@ run: build
 	./bin/toukibo-parser -mode=run -path=$(TARGET).pdf
 
 run/sample: build
+ifndef TARGET
+	$(error TARGET is not set. Usage: make run/sample TARGET=sample1)
+endif
 	./bin/toukibo-parser -mode=run -path="$(DATA_DIR)/pdf/$(TARGET).pdf"
 
 find/sample: build
+ifndef TARGET
+	$(error TARGET is not set. Usage: make find/sample TARGET=sample1 FIND="text")
+endif
+ifndef FIND
+	$(error FIND is not set. Usage: make find/sample TARGET=sample1 FIND="text")
+endif
 	./bin/toukibo-parser -mode=find -path="$(DATA_DIR)/pdf/$(TARGET).pdf" -target="$(FIND)"
 
 find/all: build
@@ -23,6 +32,9 @@ rename:
 	IDX=$(IDX) ./scripts/rename.sh
 
 edit:
+ifndef TARGET
+	$(error TARGET is not set. Usage: make edit TARGET=sample1)
+endif
 	cat $(DATA_DIR)/yaml/$(TARGET).yaml
 
 check:
@@ -30,6 +42,9 @@ check:
 	make edit TARGET=$(TARGET)
 
 annotate: build
+ifndef TARGET
+	$(error TARGET is not set. Usage: make annotate TARGET=sample1)
+endif
 	./bin/toukibo-parser -mode=run -path="$(DATA_DIR)/pdf/$(TARGET).pdf" > $(DATA_DIR)/yaml/$(TARGET).yaml
 	make check TARGET=$(TARGET)
 
@@ -57,6 +72,9 @@ get/sample: clean/data
 	unzip testdata.zip
 
 open/sample:
+ifndef TARGET
+	$(error TARGET is not set. Usage: make open/sample TARGET=sample1)
+endif
 	open $(DATA_DIR)/pdf/$(TARGET).pdf
 
 clean: clean/bin clean/data
