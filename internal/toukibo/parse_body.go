@@ -156,7 +156,7 @@ func getMultipleExecutiveNamesAndPositions(s string) (result []struct{ Name, Pos
 
 			onNameAndPos = false
 		}
-		if match := regexp.MustCompile(fmt.Sprintf("(%s)　+([%s]+)", positionsPattern, ZenkakuStringPattern)).FindStringSubmatch(b); len(match) == 3 {
+		if match := regexp.MustCompile(fmt.Sprintf("(%s)[ 　]+([%s]+)", positionsPattern, ZenkakuStringPattern)).FindStringSubmatch(b); len(match) == 3 {
 			// NOTE: 名前や役職が複数行にまたがる可能性があり、Name と Position は次行以降の内容も踏まえて確定させる必要がある
 			onNameAndPos = true
 			result = append(result, struct{ Name, Position string }{Name: trimAllSpace(match[2]), Position: trimAllSpace(match[1])})
