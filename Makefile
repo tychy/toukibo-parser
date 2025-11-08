@@ -75,7 +75,11 @@ open/sample:
 ifndef TARGET
 	$(error TARGET is not set. Usage: make open/sample TARGET=sample1)
 endif
+ifeq ($(shell uname -s),Linux)
+	xdg-open $(DATA_DIR)/pdf/$(TARGET).pdf
+else
 	open $(DATA_DIR)/pdf/$(TARGET).pdf
+endif
 
 clean: clean/bin clean/data
 
