@@ -63,8 +63,8 @@ zip/sample:
 	zip -r testdata.zip testdata
 
 put/sample: zip/sample
-	wrangler r2 object delete $(BUCKET_NAME)/testdata.zip
-	wrangler r2 object put $(BUCKET_NAME)/testdata.zip --file testdata.zip
+	wrangler r2 object delete $(BUCKET_NAME)/testdata.zip --remote
+	wrangler r2 object put $(BUCKET_NAME)/testdata.zip --file testdata.zip --remote
 	
 get/sample: clean/data
 	mkdir -p $(DATA_DIR)

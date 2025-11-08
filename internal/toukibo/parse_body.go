@@ -63,8 +63,8 @@ func getRegisterAt(s string) (string, error) {
 }
 
 func getResignedAt(s string) (string, error) {
-	// 辞任/退任の他に死亡、抹消、廃止、解任、退社も含める
-	date, found := ExtractDateWithSuffix(s, []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社"})
+	// 辞任/退任の他に死亡、抹消、廃止、解任、退社、責任変更も含める
+	date, found := ExtractDateWithSuffix(s, []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "責任変更"})
 	if found {
 		return trimAllSpace(date), nil
 	}
@@ -265,13 +265,13 @@ func applyDatesToExecutives(evs []HoujinExecutiveValue, three []string) {
 	}
 }
 
-func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int, 
+func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 	currentEvs []HoujinExecutiveValue, three []string, registerAt, resignedAt string) {
-	
+
 	if idx == 0 {
 		return
 	}
-	
+
 	if len(currentEvs) == 0 {
 		// 役員がないのに登記日がある場合は前の役員を対象にする
 		if registerAt != "" {
@@ -281,39 +281,54 @@ func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 		}
 		return
 	}
-	
+
 	if len(currentEvs) == 1 {
 		handleSingleExecutive(evsArr, idx, currentEvs[0], three)
+		// 責任変更の場合、同一人物の過去の役職エントリも無効化
+		joinedThree := strings.Join(three, "")
+		if strings.Contains(joinedThree, "責任変更") {
+			for i := 0; i < idx; i++ {
+				if evsArr[i].Name == currentEvs[0].Name && evsArr[i].Position != currentEvs[0].Position {
+					evsArr[i].IsValid = false
+				}
+			}
+		}
 	}
 }
 
-func handleSingleExecutive(evsArr HoujinExecutiveValueArray, idx int, 
+func handleSingleExecutive(evsArr HoujinExecutiveValueArray, idx int,
 	currentEv HoujinExecutiveValue, three []string) {
-	
+
 	prev := &evsArr[idx-1]
-	
+
 	// 同一役員チェック
 	if prev.Name == currentEv.Name && prev.Position == currentEv.Position {
 		prev.IsValid = false
 		return
 	}
-	
+
 	joinedThree := strings.Join(three, "")
-	
+
 	// 重任チェック
 	if strings.Contains(joinedThree, "重任") && prev.Position == currentEv.Position {
 		prev.IsValid = false
 		return
 	}
-	
+
 	// 氏名変更チェック
 	if isNameChange(joinedThree, prev.Name) {
 		prev.IsValid = false
 		return
 	}
-	
+
 	// 更正チェック
 	if strings.Contains(joinedThree, "更正") {
+		prev.IsValid = false
+		return
+	}
+
+	// 責任変更チェック（同一人物で役職が変わった場合）
+	if strings.Contains(joinedThree, "責任変更") && prev.Name == currentEv.Name {
 		prev.IsValid = false
 		return
 	}
@@ -345,7 +360,6 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	parts := splitReverts(s)
 	evsArr := make(HoujinExecutiveValueArray, 0, len(parts))
 
-	var idx int
 	for _, p := range parts {
 		if DebugOn {
 			PrintSlice(ExtractLines(p))
@@ -353,31 +367,100 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 		// 役員情報の抽出
 		evs, three := extractExecutiveInfo(p)
-		
+
 		// 日付情報の適用
 		applyDatesToExecutives(evs, three)
-		
+
 		// 日付だけ抽出（前の役員処理用）
 		registerAt, resignedAt := extractDates(three)
-		
+
 		// 前の役員との関係処理
-		handlePreviousExecutiveRelation(evsArr, idx, evs, three, registerAt, resignedAt)
-		
+		currentIdx := len(evsArr)
+		handlePreviousExecutiveRelation(evsArr, currentIdx, evs, three, registerAt, resignedAt)
+
 		// 結果の更新
 		if len(evs) > 0 {
-			idx += len(evs)
 			evsArr = append(evsArr, evs...)
-		} else if idx > 0 && registerAt != "" {
+		} else if currentIdx > 0 && registerAt != "" {
 			// 役員がないのに登記日がある場合は前の役員処理は上で完了しているので、ここではスキップ
 			continue
 		}
 	}
-	
+
+	// 後処理：責任変更があった場合、同一人物の過去の異なる役職を無効化
+	postProcessResponsibilityChanges(evsArr)
+
 	if DebugOn {
 		fmt.Println(evsArr)
 	}
-	
+
 	return evsArr, nil
+}
+
+func postProcessResponsibilityChanges(evsArr HoujinExecutiveValueArray) {
+	// 1. ResignedAtに「責任変更」が含まれている役員を無効化
+	for i := range evsArr {
+		if !evsArr[i].IsValid {
+			continue
+		}
+
+		if strings.Contains(evsArr[i].ResignedAt, "責任変更") {
+			evsArr[i].IsValid = false
+			if DebugOn {
+				fmt.Printf("Invalidating (resigned): %s %s\n", evsArr[i].Name, evsArr[i].Position)
+			}
+		}
+	}
+
+	// 2. 無限責任社員と有限責任社員の同一人物がいる場合、有限責任社員を無効化
+	//    （有限→無限への責任変更を想定）
+	for i := range evsArr {
+		if !evsArr[i].IsValid {
+			continue
+		}
+
+		if evsArr[i].Position == "無限責任社員" {
+			if DebugOn {
+				fmt.Printf("Found 無限責任社員: %s\n", evsArr[i].Name)
+			}
+			// 同じ名前の有限責任社員を探して無効化
+			for j := range evsArr {
+				if !evsArr[j].IsValid || i == j {
+					continue
+				}
+
+				if evsArr[j].Name == evsArr[i].Name && evsArr[j].Position == "有限責任社員" {
+					if DebugOn {
+						fmt.Printf("Invalidating 有限責任社員: %s (found matching 無限責任社員)\n", evsArr[j].Name)
+					}
+					evsArr[j].IsValid = false
+				}
+			}
+		}
+	}
+}
+
+func shouldInvalidateOldPosition(newer, older HoujinExecutiveValue) bool {
+	// 責任に関する役職変更のパターン
+	// 無限責任社員 vs 有限責任社員
+	// どちらかが社員系の役職で、もう一方も社員系の場合、古い方を無効化
+
+	isNewerShain := strings.Contains(newer.Position, "責任社員")
+	isOlderShain := strings.Contains(older.Position, "責任社員")
+
+	if isNewerShain && isOlderShain {
+		// 両方とも社員の場合、登記日を比較
+		// RegisterAtが設定されている場合は比較
+		if newer.RegisterAt != "" && older.RegisterAt != "" {
+			return newer.RegisterAt > older.RegisterAt
+		}
+		// 無限責任社員の方が新しいと仮定（有限→無限への変更が一般的）
+		if strings.Contains(newer.Position, "無限") && strings.Contains(older.Position, "有限") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (h *HoujinBody) ConsumeHoujinNumber(s string) bool {
