@@ -118,6 +118,30 @@ func normalizeKanji(input string) string {
 			sb.WriteRune('橋')
 		case 57687:
 			sb.WriteRune('邉')
+		// Cyrillic homoglyphs → Fullwidth Latin
+		// PDF font encoding sometimes maps Latin glyphs to Cyrillic codepoints
+		case 'А': // U+0410 → Ａ
+			sb.WriteRune('Ａ')
+		case 'В': // U+0412 → Ｂ
+			sb.WriteRune('Ｂ')
+		case 'Е': // U+0415 → Ｅ
+			sb.WriteRune('Ｅ')
+		case 'К': // U+041A → Ｋ
+			sb.WriteRune('Ｋ')
+		case 'М': // U+041C → Ｍ
+			sb.WriteRune('Ｍ')
+		case 'Н': // U+041D → Ｎ
+			sb.WriteRune('Ｎ')
+		case 'О': // U+041E → Ｏ
+			sb.WriteRune('Ｏ')
+		case 'Р': // U+0420 → Ｒ
+			sb.WriteRune('Ｒ')
+		case 'С': // U+0421 → Ｓ
+			sb.WriteRune('Ｓ')
+		case 'Т': // U+0422 → Ｔ
+			sb.WriteRune('Ｔ')
+		case 'Х': // U+0425 → Ｘ
+			sb.WriteRune('Ｘ')
 		default:
 			sb.WriteRune(r)
 		}
