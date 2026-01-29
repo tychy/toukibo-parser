@@ -64,6 +64,7 @@ func getRegisterAt(s string) (string, error) {
 
 func getResignedAt(s string) (string, error) {
 	// 辞任/退任の他に死亡、抹消、廃止、解任、退社、責任変更も含める
+	// 注：資格変更は役職の追加を意味するため、辞任とは異なり含めない
 	date, found := ExtractDateWithSuffix(s, []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "責任変更"})
 	if found {
 		return trimAllSpace(date), nil
