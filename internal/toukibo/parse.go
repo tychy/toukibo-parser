@@ -92,6 +92,19 @@ func (h *Houjin) GetHoujinAddress() string {
 	return h.header.CompanyAddress
 }
 
+func (h *Houjin) GetHoujinPurposeHistory() HoujinValueArray {
+	return h.body.HoujinPurpose
+}
+
+func (h *Houjin) GetHoujinPurpose() string {
+	for _, v := range h.body.HoujinPurpose {
+		if v.IsValid {
+			return v.Value
+		}
+	}
+	return ""
+}
+
 func (h *Houjin) GetHoujinCreatedAt() string {
 	return h.body.HoujinCreatedAt
 }

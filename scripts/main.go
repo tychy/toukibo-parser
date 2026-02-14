@@ -63,6 +63,7 @@ func mainRun() error {
 	fmt.Println("HoujinKaku: " + h.GetHoujinKaku())
 	fmt.Println("HoujinName: " + h.GetHoujinName())
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
+	fmt.Println("HoujinPurpose: " + h.GetHoujinPurpose())
 	fmt.Print("HoujinExecutiveValues: \n" + execs.String())
 	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
 	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")

@@ -225,7 +225,7 @@ func splitThree(s string) (string, string, string) {
 func extractExecutiveInfo(part string) ([]HoujinExecutiveValue, []string) {
 	posAndNames, three := getMultipleExecutiveNamesAndPositions(part)
 	evs := make([]HoujinExecutiveValue, 0, len(posAndNames))
-	
+
 	for _, posAndName := range posAndNames {
 		ev := HoujinExecutiveValue{
 			IsValid:  true,
@@ -234,7 +234,7 @@ func extractExecutiveInfo(part string) ([]HoujinExecutiveValue, []string) {
 		}
 		evs = append(evs, ev)
 	}
-	
+
 	return evs, three
 }
 
@@ -252,7 +252,7 @@ func extractDates(three []string) (registerAt, resignedAt string) {
 
 func applyDatesToExecutives(evs []HoujinExecutiveValue, three []string) {
 	registerAt, resignedAt := extractDates(three)
-	
+
 	if registerAt != "" {
 		for i := range evs {
 			evs[i].RegisterAt = registerAt
@@ -343,7 +343,7 @@ func isNameChange(text, name string) bool {
 		name + "の名称変更",
 		name + "の名",
 	}
-	
+
 	for _, pattern := range patterns {
 		if strings.Contains(text, pattern) {
 			return true
@@ -487,6 +487,10 @@ func (h *HoujinBody) ConsumeHoujinAddress(s string) bool {
 	return strings.Contains(s, "本　店") || strings.Contains(s, "主たる事務所")
 }
 
+func (h *HoujinBody) ConsumeHoujinPurpose(s string) bool {
+	return strings.Contains(s, "┃目　的") || strings.Contains(s, "┃目的等")
+}
+
 func (h *HoujinBody) ConsumeHoujinKoukoku(s string) bool {
 	pattern := `(公告をする方法|公告の方法|法人の公告方法)　*│　*(.+)┃`
 	regex := regexp.MustCompile(pattern)
@@ -587,7 +591,7 @@ func (h *HoujinBody) ConsumeHoujinContinuedAt(s string) bool {
 
 func (h *HoujinBody) shouldSkipField(s string) bool {
 	skipKeywords := []string{
-		"発行可能株式総数", "┃目　的", "┃目的等",
+		"発行可能株式総数",
 		"出資１口の金額", "出資の総口数", "出資払込の方法",
 		"株式の譲渡制限", "株券を発行する旨",
 		"取締役等の会社", "非業務執行取締役",
@@ -595,7 +599,7 @@ func (h *HoujinBody) shouldSkipField(s string) bool {
 		"解散の事由", "監査役会設置会社",
 		"地　区", "支　店", "従たる事務所",
 	}
-	
+
 	for _, keyword := range skipKeywords {
 		if strings.Contains(s, keyword) {
 			return true
@@ -622,13 +626,22 @@ func (h *HoujinBody) processHoujinAddress(s string) bool {
 	return true
 }
 
+func (h *HoujinBody) processHoujinPurpose(s string) bool {
+	v, err := GetHoujinValue(s)
+	if err != nil {
+		return false
+	}
+	h.HoujinPurpose = v
+	return true
+}
+
 func (h *HoujinBody) processHoujinCapital(s string) bool {
 	v, err := GetHoujinValue(s)
 	if err != nil {
 		return false
 	}
 	h.HoujinCapital = v
-	
+
 	// sample126, sample508用のハック
 	// 金０円（債務超過額 金２８７３万８７５４円）のような場合、資本金は金0円とする
 	for i, v := range h.HoujinCapital {
@@ -669,7 +682,7 @@ func (h *HoujinBody) processHoujinExecutive(s string) bool {
 		if strings.Contains(e, "監査役の監査の範囲を会計に関するものに限定") {
 			continue
 		}
-		
+
 		v, err := GetHoujinExecutiveValue(e)
 		if err != nil {
 			return false
@@ -699,6 +712,12 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 	if h.ConsumeHoujinAddress(s) {
 		if !h.processHoujinAddress(s) {
 			return fmt.Errorf("failed to process houjin address")
+		}
+		return nil
+	}
+	if h.ConsumeHoujinPurpose(s) {
+		if !h.processHoujinPurpose(s) {
+			return fmt.Errorf("failed to process houjin purpose")
 		}
 		return nil
 	}
