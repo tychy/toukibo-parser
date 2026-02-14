@@ -10,6 +10,7 @@ type HoujinBody struct {
 	HoujinKaku         HoujinkakuType
 	HoujinName         HoujinValueArray
 	HoujinAddress      HoujinValueArray
+	HoujinPurpose      HoujinValueArray
 	HoujinKoukoku      string
 	HoujinCreatedAt    string
 	HoujinBankruptedAt string
@@ -22,10 +23,11 @@ type HoujinBody struct {
 }
 
 func (h *HoujinBody) String() string {
-	out := fmt.Sprintf("Body\n法人番号 : %s\n法人名  : %s\n法人住所 : %s\n公告   : %s\n成立年月日: %s\n解散年月日: %s\n資本金  : %s\n登記記録 : %s\n",
+	out := fmt.Sprintf("Body\n法人番号 : %s\n法人名  : %s\n法人住所 : %s\n目的   : %s\n公告   : %s\n成立年月日: %s\n解散年月日: %s\n資本金  : %s\n登記記録 : %s\n",
 		h.HoujinNumber,
 		h.HoujinName,
 		h.HoujinAddress,
+		h.HoujinPurpose,
 		h.HoujinKoukoku,
 		h.HoujinCreatedAt,
 		h.HoujinDissolvedAt,
