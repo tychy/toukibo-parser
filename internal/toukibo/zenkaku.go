@@ -118,6 +118,8 @@ func normalizeKanji(input string) string {
 			sb.WriteRune('橋')
 		case 57687:
 			sb.WriteRune('邉')
+		case 61066:
+			sb.WriteRune('四')
 		// Cyrillic homoglyphs → Fullwidth Latin
 		// PDF font encoding sometimes maps Latin glyphs to Cyrillic codepoints
 		case 'А': // U+0410 → Ａ
