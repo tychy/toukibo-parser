@@ -3,6 +3,8 @@ package toukibo_parser
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/tychy/toukibo-parser/internal/toukibo"
@@ -41,8 +43,34 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
+func getTestSampleCount(t *testing.T) int {
+	t.Helper()
+
+	pdfFiles, err := filepath.Glob("testdata/pdf/sample*.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pdfFiles) == 0 {
+		t.Fatal("no sample PDFs found; run make get/sample")
+	}
+
+	value := os.Getenv("NUM_SAMPLE")
+	if value == "" {
+		return len(pdfFiles)
+	}
+
+	count, err := strconv.Atoi(value)
+	if err != nil || count <= 0 {
+		t.Fatalf("NUM_SAMPLE must be a positive integer: %q", value)
+	}
+	if count != len(pdfFiles) {
+		t.Fatalf("NUM_SAMPLE (%d) does not match the number of sample PDFs (%d)", count, len(pdfFiles))
+	}
+	return count
+}
+
 func TestToukiboParser(t *testing.T) {
-	const testCount = 1522
+	testCount := getTestSampleCount(t)
 	for i := 1; i <= testCount; i++ {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			i := i
@@ -187,7 +215,7 @@ func TestBrokenToukibo(t *testing.T) {
 			t.Logf("broken%d.pdf: got error from GetContentByPDFPath: %v", i, err)
 			continue
 		}
-		
+
 		// If GetContentByPDFPath didn't return error, try parsing
 		_, err = toukibo.Parse(content)
 		if err == nil {

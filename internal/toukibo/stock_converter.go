@@ -17,17 +17,17 @@ func GetStockNumber(s string) (int, string) {
 		}
 		return num, ""
 	}
-	
+
 	// 株までの部分を抽出
 	numPart := s[:kabuIndex]
 	remaining := s[kabuIndex+len("株"):]
-	
+
 	// 数値をパース
 	num, err := ParseJapaneseNumber(numPart, JapaneseNumberUnits)
 	if err != nil {
 		return 0, remaining
 	}
-	
+
 	return num, remaining
 }
 
@@ -88,8 +88,9 @@ func GetHoujinStock(stock string) HoujinStock {
 		stock = regexp.MustCompile(`（[0-9]+）`).ReplaceAllString(stock, "")
 
 		// *優先株式 or *種類株式で始まる場合
-		pattern := fmt.Sprintf("([%s]+-[0-9]種優先株式|[%s]+[0-9]種優先株式|[%s]+[0-9]優先株式|[%s]+優先株式|[%s]+種類株式|[%s]+種株式)",
-			ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern)
+		pattern := fmt.Sprintf("(第[0-9]+回[%s]+優先株式|[%s]+-[0-9]種優先株式|[%s]+[0-9]種優先株式|[%s]+[0-9]優先株式|[%s]+優先配当株式|[%s]+優先株式|[%s]+種類株式|[%s]+種株式)",
+			ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern,
+			ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern, ZenkakuNoNumberStringPattern)
 		regex := regexp.MustCompile(pattern)
 		matches := regex.FindStringSubmatch(stock)
 		if len(matches) > 0 {
