@@ -35,6 +35,27 @@ func TestGetStockNumber(t *testing.T) {
 	}
 }
 
+func TestGetHoujinStockWithNumberedAndDividendPreferredStock(t *testing.T) {
+	stock := toukibo.GetHoujinStock("発行済株式の総数600193株各種の株式の数第1回B種優先株式60万株甲種優先配当株式188株丙種優先配当株式5株")
+
+	if stock.Total != 600193 {
+		t.Fatalf("total = %d; want 600193", stock.Total)
+	}
+	want := []toukibo.HoujinPreferredStock{
+		{Type: "第1回B種優先株式", Amount: 600000},
+		{Type: "甲種優先配当株式", Amount: 188},
+		{Type: "丙種優先配当株式", Amount: 5},
+	}
+	if len(stock.Preferred) != len(want) {
+		t.Fatalf("preferred stock count = %d; want %d: %+v", len(stock.Preferred), len(want), stock.Preferred)
+	}
+	for i := range want {
+		if stock.Preferred[i] != want[i] {
+			t.Errorf("preferred stock[%d] = %+v; want %+v", i, stock.Preferred[i], want[i])
+		}
+	}
+}
+
 func TestStockToNumber(t *testing.T) {
 	testCases := []struct {
 		input    string
