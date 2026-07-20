@@ -22,25 +22,25 @@ func GetContentByPDFPath(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	content := buf.String()
 	// Check if content is valid (not empty and contains expected characters)
 	if len(content) == 0 {
 		return "", fmt.Errorf("PDF content is empty")
 	}
-	
+
 	// Check if content contains valid Japanese text or expected patterns
 	// Encrypted PDFs often produce garbled text
 	validChars := 0
 	for _, r := range content {
 		if r >= 0x3040 && r <= 0x309F || // Hiragana
-		   r >= 0x30A0 && r <= 0x30FF || // Katakana
-		   r >= 0x4E00 && r <= 0x9FAF || // Kanji
-		   r >= 0x20 && r <= 0x7E {      // ASCII
+			r >= 0x30A0 && r <= 0x30FF || // Katakana
+			r >= 0x4E00 && r <= 0x9FAF || // Kanji
+			r >= 0x20 && r <= 0x7E { // ASCII
 			validChars++
 		}
 	}
-	
+
 	// If less than 50% of characters are valid, likely encrypted or corrupted
 	// Also check for specific patterns that indicate valid toukibo content
 	validRatio := float64(validChars) / float64(len([]rune(content)))
@@ -58,7 +58,7 @@ func GetContentByPDFPath(path string) (string, error) {
 			return "", fmt.Errorf("PDF content appears to be encrypted or corrupted (valid ratio: %.2f)", validRatio)
 		}
 	}
-	
+
 	return content, nil
 }
 
@@ -72,7 +72,7 @@ func ParseByPDFPath(path string) (*toukibo.Houjin, error) {
 
 func ParseByPDFReader(r *pdf.Reader) (*toukibo.Houjin, error) {
 	var buf bytes.Buffer
-	b, err := r.GetPlainText()
+	b, err := r.GetPlainTextWithDeletionMarks()
 	if err != nil {
 		return nil, err
 	}

@@ -48,6 +48,10 @@ func (h *HoujinBody) GetHoujinKaku() HoujinkakuType {
 	return h.HoujinKaku
 }
 
+func (h *HoujinBody) isCurrentlyDissolved() bool {
+	return h.HoujinDissolvedAt != "" && h.HoujinContinuedAt == ""
+}
+
 func postProcessResponsibilityChangesGlobal(evsArr []HoujinExecutiveValue) {
 	// 1. ResignedAtに「責任変更」が含まれている役員を無効化
 	for i := range evsArr {
@@ -93,8 +97,8 @@ func postProcessResponsibilityChangesGlobal(evsArr []HoujinExecutiveValue) {
 
 func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
 	if len(h.HoujinExecutive) == 0 {
-		if h.HoujinDissolvedAt != "" {
-			// 法人が解散していれば代表はいなくても良い
+		if h.isCurrentlyDissolved() {
+			// 法人が解散していれば役員はいなくても良い
 			return []HoujinExecutiveValue{}, nil
 		}
 		return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
@@ -120,12 +124,15 @@ func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
 	if len(res) > 0 {
 		return res, nil
 	}
+	if h.isCurrentlyDissolved() {
+		return []HoujinExecutiveValue{}, nil
+	}
 	return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
 }
 
 func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) {
 	if len(h.HoujinExecutive) == 0 {
-		if h.HoujinDissolvedAt != "" {
+		if h.isCurrentlyDissolved() {
 			// 法人が解散していれば代表はいなくても良い
 			return []HoujinExecutiveValue{}, nil
 		}
@@ -154,6 +161,12 @@ func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) 
 	res = h.FindExecutivesByPosition("保全管財人")
 	if len(res) > 0 {
 		return res, nil
+	}
+
+	// 解散後は取締役等を代表者として扱わない。清算人等が登記されて
+	// いない場合も、現在の代表者なしとして正常に返す。
+	if h.isCurrentlyDissolved() {
+		return []HoujinExecutiveValue{}, nil
 	}
 
 	res = h.FindExecutivesByPosition("代表取締役", "代表理事", "代表社員", "会長",

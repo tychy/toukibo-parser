@@ -32,11 +32,7 @@ func BenchmarkMain(b *testing.B) {
 	const testCount = 1000
 	for i := 1; i <= testCount; i++ {
 		pdfFileName := fmt.Sprintf("testdata/pdf/sample%d.pdf", i)
-		content, err := GetContentByPDFPath(pdfFileName)
-		if err != nil {
-			b.Fatal(err)
-		}
-		_, err = toukibo.Parse(content)
+		_, err := ParseByPDFPath(pdfFileName)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -77,11 +73,7 @@ func TestToukiboParser(t *testing.T) {
 			t.Parallel()
 			pdfFileName := fmt.Sprintf("testdata/pdf/sample%d.pdf", i)
 			yamlFileName := fmt.Sprintf("testdata/yaml/sample%d.yaml", i)
-			content, err := GetContentByPDFPath(pdfFileName)
-			if err != nil {
-				t.Fatal(err)
-			}
-			h, err := toukibo.Parse(content)
+			h, err := ParseByPDFPath(pdfFileName)
 			if err != nil {
 				t.Fatal(err)
 			}
