@@ -1,5 +1,6 @@
 BUCKET_NAME=toukibo-parser-samples
 URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
+SNAPSHOT_MANIFEST=testdata-snapshot.json
 DATA_DIR=testdata
 export NUM_SAMPLE=1777
 
@@ -60,16 +61,14 @@ bench: build
 #	go tool pprof -http=":8888" mem.out
 
 zip/sample:
-	zip -r testdata.zip testdata
+	rm -f testdata.zip
+	zip -X -r testdata.zip testdata -x '*/.DS_Store' '*/bak_*'
 
-put/sample: zip/sample
-	wrangler r2 object delete $(BUCKET_NAME)/testdata.zip --remote
-	wrangler r2 object put $(BUCKET_NAME)/testdata.zip --file testdata.zip --remote
-	
+put/sample:
+	BUCKET_NAME=$(BUCKET_NAME) SNAPSHOT_MANIFEST=$(SNAPSHOT_MANIFEST) ./scripts/put-sample-snapshot.sh
+
 get/sample: clean/data
-	mkdir -p $(DATA_DIR)
-	curl -o testdata.zip $(URL)/testdata.zip
-	unzip testdata.zip
+	SAMPLE_URL=$(URL) SNAPSHOT_MANIFEST=$(SNAPSHOT_MANIFEST) ./scripts/get-sample-snapshot.sh
 
 open/sample:
 ifndef TARGET

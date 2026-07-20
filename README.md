@@ -44,6 +44,15 @@ HoujinContinuedAt:
 % make test
 ```
 
+テストデータはR2上の変更不可なスナップショットとして管理します。`testdata-snapshot.json` が使用するオブジェクト、SHA-256、サンプル数を固定し、`make get/sample` はダウンロード後に整合性を検証します。
+
+期待値を更新して全件テストを通した後、次のコマンドで新しいスナップショットを追加します。既存スナップショットは上書き・削除されません。
+
+```
+% make put/sample
+% git add testdata-snapshot.json
+```
+
 ## デモ
 [こちら](https://toukibo-parser-demo.tychy.jp/)のページでパーサーの性能をお試しいただくことが可能です。
 
