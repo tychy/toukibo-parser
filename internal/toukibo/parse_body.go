@@ -64,7 +64,7 @@ func getRegisterAt(s string) (string, error) {
 
 func getResignedAt(s string) (string, error) {
 	// 辞任/退任の他に死亡、抹消、廃止、解任、退社、責任変更も含める
-	// 注：資格変更は役職の追加を意味するため、辞任とは異なり含めない
+	// 注：資格変更は新しい役職側に記録されるため、対象エントリ自体の退任とは扱わない
 	date, found := ExtractDateWithSuffix(s, []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "責任変更"})
 	if found {
 		return trimAllSpace(date), nil
@@ -310,8 +310,9 @@ func handleSingleExecutive(evsArr HoujinExecutiveValueArray, idx int,
 
 	joinedThree := strings.Join(three, "")
 
-	// 重任チェック
-	if strings.Contains(joinedThree, "重任") && prev.Position == currentEv.Position {
+	// 重任・資格変更チェック
+	// 資格変更は現在の役職エントリに記録され、同じ役職の直前の人物を置き換える。
+	if (strings.Contains(joinedThree, "重任") || strings.Contains(joinedThree, "資格変更")) && prev.Position == currentEv.Position {
 		prev.IsValid = false
 		return
 	}
