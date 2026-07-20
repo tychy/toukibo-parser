@@ -7,6 +7,8 @@ import (
 )
 
 const (
+	deletedTextMarker = "\u2063"
+
 	revert1         = "┃　　　　　　　　├─────────────────────────────────────┨"
 	revert2         = "┃　　　　　　　　├───────────────────────┬─────────────┨"
 	revert3         = "┃　　　　　　　　├───────────────────────┼─────────────┨"
@@ -127,7 +129,10 @@ func normalizeExecutiveName(s string) string {
 	return name
 }
 
-func getMultipleExecutiveNamesAndPositions(s string) (result []struct{ Name, Position string }, three []string) {
+func getMultipleExecutiveNamesAndPositions(s string) (result []struct {
+	Name, Position string
+	IsDeleted      bool
+}, three []string) {
 	var onNameAndPos bool
 	for _, l := range ExtractLines(s) {
 		_, remain := getPartOne(l)
@@ -138,6 +143,9 @@ func getMultipleExecutiveNamesAndPositions(s string) (result []struct{ Name, Pos
 			// 空行挟んで名前や役職が続く場合があるため、何もせずにスキップ
 			continue
 		}
+
+		isDeleted := strings.Contains(b, deletedTextMarker)
+		b = strings.ReplaceAll(b, deletedTextMarker, "")
 
 		if onNameAndPos {
 			// 前の行に役職 + 名前が記述されていた場合
@@ -160,12 +168,18 @@ func getMultipleExecutiveNamesAndPositions(s string) (result []struct{ Name, Pos
 		if match := regexp.MustCompile(fmt.Sprintf("(%s)　+([%s]+)", positionsPattern, ZenkakuStringPattern)).FindStringSubmatch(b); len(match) == 3 {
 			// NOTE: 名前や役職が複数行にまたがる可能性があり、Name と Position は次行以降の内容も踏まえて確定させる必要がある
 			onNameAndPos = true
-			result = append(result, struct{ Name, Position string }{Name: trimAllSpace(match[2]), Position: trimAllSpace(match[1])})
+			result = append(result, struct {
+				Name, Position string
+				IsDeleted      bool
+			}{Name: trimAllSpace(match[2]), Position: trimAllSpace(match[1]), IsDeleted: isDeleted})
 			continue
 		}
 
 		if _, pos, name := getShain(b); pos != "" {
-			result = append(result, struct{ Name, Position string }{Name: name, Position: pos})
+			result = append(result, struct {
+				Name, Position string
+				IsDeleted      bool
+			}{Name: name, Position: pos, IsDeleted: isDeleted})
 			continue
 		}
 	}
@@ -228,7 +242,7 @@ func extractExecutiveInfo(part string) ([]HoujinExecutiveValue, []string) {
 
 	for _, posAndName := range posAndNames {
 		ev := HoujinExecutiveValue{
-			IsValid:  true,
+			IsValid:  !posAndName.IsDeleted,
 			Name:     posAndName.Name,
 			Position: posAndName.Position,
 		}
@@ -694,6 +708,13 @@ func (h *HoujinBody) processHoujinExecutive(s string) bool {
 }
 
 func (h *HoujinBody) ParseBodyMain(s string) error {
+	// Underline annotations are only needed while parsing deleted executives.
+	// Remove them from other fields so historical names, addresses, and dates
+	// retain their original values.
+	if !h.ConsumeHoujinExecutive(s) {
+		s = strings.ReplaceAll(s, deletedTextMarker, "")
+	}
+
 	if h.shouldSkipField(s) {
 		return nil
 	}

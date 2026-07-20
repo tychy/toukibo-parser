@@ -37,6 +37,18 @@ func main() {
 	}
 }
 
+func formatYAMLStringList(values []string) string {
+	formatted := make([]string, len(values))
+	for i, value := range values {
+		if value == "" {
+			formatted[i] = `""`
+			continue
+		}
+		formatted[i] = value
+	}
+	return "[" + strings.Join(formatted, ",") + "]"
+}
+
 func mainRun() error {
 	h, err := toukibo_parser.ParseByPDFPath(path)
 	if err != nil {
@@ -65,8 +77,8 @@ func mainRun() error {
 	fmt.Println("HoujinAddress: " + h.GetHoujinAddress())
 	fmt.Println("HoujinPurpose: " + h.GetHoujinPurpose())
 	fmt.Print("HoujinExecutiveValues: \n" + execs.String())
-	fmt.Println("HoujinExecutiveNames: [" + strings.Join(execNames, ",") + "]")
-	fmt.Println("HoujinRepresentativeNames: [" + strings.Join(repName, ",") + "]")
+	fmt.Println("HoujinExecutiveNames: " + formatYAMLStringList(execNames))
+	fmt.Println("HoujinRepresentativeNames: " + formatYAMLStringList(repName))
 	fmt.Printf("HoujinCapital: %d\n", h.GetHoujinCapital())
 	fmt.Printf("HoujinStock: %d\n", h.GetHoujinTotalStock())
 	fmt.Print("HoujinPreferredStock: \n" + stock.String())

@@ -2,6 +2,32 @@ package toukibo
 
 import "testing"
 
+func TestGetHoujinExecutiveValueDeletedUnderline(t *testing.T) {
+	s := "┃　　　　　　　　│" + deletedTextMarker + "　取締役　　　　　山　田　太　郎　　　　　　　　　　　　　　　　　　　　　┃" +
+		revert2 +
+		"┃　　　　　　　　│　取締役　　　　　鈴　木　花　子　　　　　　　│令和　３年　３月３１日就任┃"
+
+	executives, err := GetHoujinExecutiveValue(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(executives) != 2 {
+		t.Fatalf("executive count: want 2, got %d", len(executives))
+	}
+	if executives[0].IsValid {
+		t.Fatal("underlined executive must be invalid")
+	}
+	if executives[0].Name != "山田太郎" || executives[0].Position != "取締役" {
+		t.Fatalf("deleted executive: got %+v", executives[0])
+	}
+	if !executives[1].IsValid {
+		t.Fatal("current executive must remain valid")
+	}
+	if executives[1].Name != "鈴木花子" || executives[1].Position != "取締役" {
+		t.Fatalf("current executive: got %+v", executives[1])
+	}
+}
+
 func TestGetHoujinExecutiveValueQualificationChange(t *testing.T) {
 	s := "┃　　　　　　　　│　社員　　　　　　山　田　太　郎　　　　　　　　　　　　　　　　　　　　　┃" +
 		revert2 +

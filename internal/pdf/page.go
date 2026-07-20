@@ -11,6 +11,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 // A Page represent a single page in a PDF file.
@@ -64,8 +65,18 @@ func (r *Reader) NumPage() (n int, err error) {
 	return int(r.Trailer().Key("Root").Key("Pages").Key("Count").Int64()), nil
 }
 
-// GetPlainText returns all the text in the PDF file
+// GetPlainText returns all the text in the PDF file.
 func (r *Reader) GetPlainText() (reader io.Reader, err error) {
+	return r.getPlainText(false)
+}
+
+// GetPlainTextWithDeletionMarks returns all text and annotates text underlines
+// that indicate deleted registry entries.
+func (r *Reader) GetPlainTextWithDeletionMarks() (reader io.Reader, err error) {
+	return r.getPlainText(true)
+}
+
+func (r *Reader) getPlainText(markDeleted bool) (reader io.Reader, err error) {
 	pages, err := r.NumPage()
 	if err != nil {
 		return nil, err
@@ -86,7 +97,7 @@ func (r *Reader) GetPlainText() (reader io.Reader, err error) {
 				fonts[name] = &f
 			}
 		}
-		text, err := p.GetPlainText(fonts)
+		text, err := p.getPlainText(fonts, markDeleted)
 		if err != nil {
 			return &bytes.Buffer{}, err
 		}
@@ -476,9 +487,124 @@ type gstate struct {
 	CTM   matrix
 }
 
+func transformPoint(p Point, m matrix) Point {
+	return Point{
+		X: p.X*m[0][0] + p.Y*m[1][0] + m[2][0],
+		Y: p.X*m[0][1] + p.Y*m[1][1] + m[2][1],
+	}
+}
+
+// underlineYs returns the Y coordinates of text underlines drawn as consecutive
+// short horizontal strokes. Registration PDFs use these strokes to mark deleted
+// entries, but they are not represented in the extracted text itself.
+func (p Page) underlineYs() []float64 {
+	strm := p.V.Key("Contents")
+	ctm := ident
+	var ctmStack []matrix
+	var current Point
+	var pending []int
+	counts := make(map[int]int)
+
+	Interpret(strm, func(stk *Stack, op string) {
+		n := stk.Len()
+		args := make([]Value, n)
+		for i := n - 1; i >= 0; i-- {
+			args[i] = stk.Pop()
+		}
+
+		switch op {
+		case "cm":
+			if len(args) != 6 {
+				return
+			}
+			var m matrix
+			for i := 0; i < 6; i++ {
+				m[i/2][i%2] = args[i].Float64()
+			}
+			m[2][2] = 1
+			ctm = m.mul(ctm)
+		case "q":
+			ctmStack = append(ctmStack, ctm)
+		case "Q":
+			if len(ctmStack) == 0 {
+				return
+			}
+			ctm = ctmStack[len(ctmStack)-1]
+			ctmStack = ctmStack[:len(ctmStack)-1]
+		case "m":
+			if len(args) != 2 {
+				return
+			}
+			current = transformPoint(Point{X: args[0].Float64(), Y: args[1].Float64()}, ctm)
+		case "l":
+			if len(args) != 2 {
+				return
+			}
+			next := transformPoint(Point{X: args[0].Float64(), Y: args[1].Float64()}, ctm)
+			width := next.X - current.X
+			if width < 0 {
+				width = -width
+			}
+			height := next.Y - current.Y
+			if height < 0 {
+				height = -height
+			}
+			// Underlines in registry PDFs are emitted one character at a time.
+			// Ignore long rules so ordinary table borders cannot hide text.
+			if height < 0.1 && width >= 2 && width <= 20 {
+				pending = append(pending, int(current.Y*10+0.5))
+			}
+			current = next
+		case "S", "s", "B", "B*", "b", "b*":
+			for _, y := range pending {
+				counts[y]++
+			}
+			pending = pending[:0]
+		case "n":
+			pending = pending[:0]
+		}
+	})
+
+	var ys []float64
+	for y, count := range counts {
+		if count >= 2 {
+			ys = append(ys, float64(y)/10)
+		}
+	}
+	return ys
+}
+
+func hasNonStructuralText(s string) bool {
+	for _, r := range s {
+		if unicode.IsSpace(r) || r >= '\u2500' && r <= '\u257f' {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func isUnderlinedText(y, fontSize float64, underlineYs []float64) bool {
+	tolerance := fontSize * 0.25
+	if tolerance < 2 {
+		tolerance = 2
+	}
+	for _, underlineY := range underlineYs {
+		delta := y - underlineY
+		if delta >= 0.2 && delta <= tolerance {
+			return true
+		}
+	}
+	return false
+}
+
 // GetPlainText returns the page's all text without format.
-// fonts can be passed in (to improve parsing performance) or left nil
+// fonts can be passed in (to improve parsing performance) or left nil.
 func (p Page) GetPlainText(fonts map[string]*Font) (result string, err error) {
+	return p.getPlainText(fonts, false)
+}
+
+func (p Page) getPlainText(fonts map[string]*Font, markDeleted bool) (result string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			result = ""
@@ -497,11 +623,40 @@ func (p Page) GetPlainText(fonts map[string]*Font) (result string, err error) {
 		}
 	}
 
+	var underlineYs []float64
+	if markDeleted {
+		underlineYs = p.underlineYs()
+	}
+	var g = gstate{
+		Th:  1,
+		CTM: ident,
+		Tm:  ident,
+		Tlm: ident,
+	}
+	var gstack []gstate
+
 	var textBuilder bytes.Buffer
-	showText := func(s string) {
-		for _, ch := range enc.Decode(s) {
-			textBuilder.WriteRune(ch)
+	showText := func(raw ...string) {
+		var decoded strings.Builder
+		for _, s := range raw {
+			decoded.WriteString(enc.Decode(s))
 		}
+		text := decoded.String()
+
+		baseline := transformPoint(Point{X: g.Tm[2][0], Y: g.Tm[2][1] + g.Trise}, g.CTM)
+		if markDeleted && isUnderlinedText(baseline.Y, g.Tfs, underlineYs) && hasNonStructuralText(text) {
+			// Preserve the text because underlined history still matters for
+			// most fields. The business parser uses this invisible marker to
+			// ignore deleted executive entries only.
+			const deletedTextMarker = "\u2063"
+			if start := strings.IndexRune(text, '│'); start >= 0 {
+				start += len("│")
+				text = text[:start] + deletedTextMarker + text[start:]
+			} else {
+				text = deletedTextMarker + text
+			}
+		}
+		textBuilder.WriteString(text)
 	}
 
 	Interpret(strm, func(stk *Stack, op string) {
@@ -514,17 +669,80 @@ func (p Page) GetPlainText(fonts map[string]*Font) (result string, err error) {
 		switch op {
 		default:
 			return
+		case "cm":
+			if len(args) != 6 {
+				return
+			}
+			var m matrix
+			for i := 0; i < 6; i++ {
+				m[i/2][i%2] = args[i].Float64()
+			}
+			m[2][2] = 1
+			g.CTM = m.mul(g.CTM)
+		case "q":
+			gstack = append(gstack, g)
+		case "Q":
+			if len(gstack) == 0 {
+				return
+			}
+			g = gstack[len(gstack)-1]
+			gstack = gstack[:len(gstack)-1]
+		case "BT":
+			g.Tm = ident
+			g.Tlm = ident
 		case "T*": // move to start of next line
+			x := matrix{{1, 0, 0}, {0, 1, 0}, {0, -g.Tl, 1}}
+			g.Tlm = x.mul(g.Tlm)
+			g.Tm = g.Tlm
 			showText("\n")
+		case "TD":
+			if len(args) != 2 {
+				return
+			}
+			g.Tl = -args[1].Float64()
+			fallthrough
+		case "Td":
+			if len(args) != 2 {
+				return
+			}
+			x := matrix{{1, 0, 0}, {0, 1, 0}, {args[0].Float64(), args[1].Float64(), 1}}
+			g.Tlm = x.mul(g.Tlm)
+			g.Tm = g.Tlm
+		case "TL":
+			if len(args) == 1 {
+				g.Tl = args[0].Float64()
+			}
+		case "Tm":
+			if len(args) != 6 {
+				return
+			}
+			var m matrix
+			for i := 0; i < 6; i++ {
+				m[i/2][i%2] = args[i].Float64()
+			}
+			m[2][2] = 1
+			g.Tm = m
+			g.Tlm = m
+		case "Ts":
+			if len(args) == 1 {
+				g.Trise = args[0].Float64()
+			}
+		case "Tz":
+			if len(args) == 1 {
+				g.Th = args[0].Float64() / 100
+			}
 		case "Tf": // set text font and size
 			if len(args) != 2 {
 				return // skip invalid operator
 			}
 			if font, ok := fonts[args[0].Name()]; ok {
 				enc = font.Encoder()
+				g.Tf = *font
 			} else {
 				enc = &nopEncoder{}
+				g.Tf = Font{}
 			}
+			g.Tfs = args[1].Float64()
 		case "\"": // set spacing, move to next line, and show text
 			if len(args) != 3 {
 				return // skip invalid operator
@@ -542,12 +760,14 @@ func (p Page) GetPlainText(fonts map[string]*Font) (result string, err error) {
 			showText(args[0].RawString())
 		case "TJ": // show text, allowing individual glyph positioning
 			v := args[0]
+			raw := make([]string, 0, v.Len())
 			for i := 0; i < v.Len(); i++ {
 				x := v.Index(i)
 				if x.Kind() == String {
-					showText(x.RawString())
+					raw = append(raw, x.RawString())
 				}
 			}
+			showText(raw...)
 		}
 	})
 	return textBuilder.String(), nil
