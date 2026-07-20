@@ -2,6 +2,8 @@ package toukibo
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -48,8 +50,50 @@ func (h *HoujinBody) GetHoujinKaku() HoujinkakuType {
 	return h.HoujinKaku
 }
 
+var warekiDatePattern = regexp.MustCompile(`^(明治|大正|昭和|平成|令和)(元|[0-9]+)年([0-9]+)月([0-9]+)日$`)
+
+func warekiDateValue(s string) (int, bool) {
+	normalized := strings.Join(strings.Fields(ZenkakuToHankaku(s)), "")
+	matches := warekiDatePattern.FindStringSubmatch(normalized)
+	if len(matches) != 5 {
+		return 0, false
+	}
+	eraStart := map[string]int{
+		"明治": 1868,
+		"大正": 1912,
+		"昭和": 1926,
+		"平成": 1989,
+		"令和": 2019,
+	}[matches[1]]
+	year := 1
+	var err error
+	if matches[2] != "元" {
+		year, err = strconv.Atoi(matches[2])
+		if err != nil {
+			return 0, false
+		}
+	}
+	month, err := strconv.Atoi(matches[3])
+	if err != nil {
+		return 0, false
+	}
+	day, err := strconv.Atoi(matches[4])
+	if err != nil {
+		return 0, false
+	}
+	return (eraStart+year-1)*10000 + month*100 + day, true
+}
+
 func (h *HoujinBody) isCurrentlyDissolved() bool {
-	return h.HoujinDissolvedAt != "" && h.HoujinContinuedAt == ""
+	if h.HoujinDissolvedAt == "" {
+		return false
+	}
+	if h.HoujinContinuedAt == "" {
+		return true
+	}
+	dissolvedAt, dissolvedOK := warekiDateValue(h.HoujinDissolvedAt)
+	continuedAt, continuedOK := warekiDateValue(h.HoujinContinuedAt)
+	return dissolvedOK && continuedOK && dissolvedAt > continuedAt
 }
 
 func postProcessResponsibilityChangesGlobal(evsArr []HoujinExecutiveValue) {

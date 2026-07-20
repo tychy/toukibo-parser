@@ -494,16 +494,22 @@ func transformPoint(p Point, m matrix) Point {
 	}
 }
 
-// underlineYs returns the Y coordinates of text underlines drawn as consecutive
-// short horizontal strokes. Registration PDFs use these strokes to mark deleted
+type underlineSegment struct {
+	minX float64
+	maxX float64
+	y    float64
+}
+
+// underlines returns text underline segments drawn as consecutive short
+// horizontal strokes. Registration PDFs use these strokes to mark deleted
 // entries, but they are not represented in the extracted text itself.
-func (p Page) underlineYs() []float64 {
+func (p Page) underlines() []underlineSegment {
 	strm := p.V.Key("Contents")
 	ctm := ident
 	var ctmStack []matrix
 	var current Point
-	var pending []int
-	counts := make(map[int]int)
+	var pending []underlineSegment
+	segmentsByY := make(map[int][]underlineSegment)
 
 	Interpret(strm, func(stk *Stack, op string) {
 		n := stk.Len()
@@ -541,10 +547,11 @@ func (p Page) underlineYs() []float64 {
 				return
 			}
 			next := transformPoint(Point{X: args[0].Float64(), Y: args[1].Float64()}, ctm)
-			width := next.X - current.X
-			if width < 0 {
-				width = -width
+			minX, maxX := current.X, next.X
+			if minX > maxX {
+				minX, maxX = maxX, minX
 			}
+			width := maxX - minX
 			height := next.Y - current.Y
 			if height < 0 {
 				height = -height
@@ -552,12 +559,13 @@ func (p Page) underlineYs() []float64 {
 			// Underlines in registry PDFs are emitted one character at a time.
 			// Ignore long rules so ordinary table borders cannot hide text.
 			if height < 0.1 && width >= 2 && width <= 20 {
-				pending = append(pending, int(current.Y*10+0.5))
+				pending = append(pending, underlineSegment{minX: minX, maxX: maxX, y: current.Y})
 			}
 			current = next
 		case "S", "s", "B", "B*", "b", "b*":
-			for _, y := range pending {
-				counts[y]++
+			for _, segment := range pending {
+				y := int(segment.y*10 + 0.5)
+				segmentsByY[y] = append(segmentsByY[y], segment)
 			}
 			pending = pending[:0]
 		case "n":
@@ -565,13 +573,13 @@ func (p Page) underlineYs() []float64 {
 		}
 	})
 
-	var ys []float64
-	for y, count := range counts {
-		if count >= 2 {
-			ys = append(ys, float64(y)/10)
+	var underlines []underlineSegment
+	for _, segments := range segmentsByY {
+		if len(segments) >= 2 {
+			underlines = append(underlines, segments...)
 		}
 	}
-	return ys
+	return underlines
 }
 
 func hasNonStructuralText(s string) bool {
@@ -584,18 +592,54 @@ func hasNonStructuralText(s string) bool {
 	return false
 }
 
-func isUnderlinedText(y, fontSize float64, underlineYs []float64) bool {
-	tolerance := fontSize * 0.25
-	if tolerance < 2 {
-		tolerance = 2
+func isUnderlinedText(start, end Point, fontSize float64, underlines []underlineSegment) bool {
+	yTolerance := fontSize * 0.25
+	if yTolerance < 2 {
+		yTolerance = 2
 	}
-	for _, underlineY := range underlineYs {
-		delta := y - underlineY
-		if delta >= 0.2 && delta <= tolerance {
+	xTolerance := fontSize * 0.1
+	if xTolerance < 1 {
+		xTolerance = 1
+	}
+	minX, maxX := start.X, end.X
+	if minX > maxX {
+		minX, maxX = maxX, minX
+	}
+	for _, underline := range underlines {
+		delta := start.Y - underline.y
+		if delta >= 0.2 && delta <= yTolerance &&
+			maxX >= underline.minX-xTolerance && minX <= underline.maxX+xTolerance {
 			return true
 		}
 	}
 	return false
+}
+
+func textAdvance(g gstate, raw, decoded string) float64 {
+	glyphs := len([]rune(decoded))
+	if glyphs == 0 {
+		return 0
+	}
+
+	// Width() supports simple one-byte fonts. CID fonts used for Japanese text
+	// generally expose no widths here, so fall back to one em per decoded glyph.
+	var width float64
+	widthAvailable := len(raw) == glyphs
+	if widthAvailable {
+		for i := 0; i < len(raw); i++ {
+			glyphWidth := g.Tf.Width(int(raw[i]))
+			if glyphWidth == 0 {
+				widthAvailable = false
+				break
+			}
+			width += glyphWidth / 1000 * g.Tfs
+		}
+	}
+	if !widthAvailable {
+		width = float64(glyphs) * g.Tfs
+	}
+	width += float64(glyphs)*g.Tc + float64(strings.Count(raw, " "))*g.Tw
+	return width * g.Th
 }
 
 // GetPlainText returns the page's all text without format.
@@ -623,9 +667,9 @@ func (p Page) getPlainText(fonts map[string]*Font, markDeleted bool) (result str
 		}
 	}
 
-	var underlineYs []float64
+	var underlines []underlineSegment
 	if markDeleted {
-		underlineYs = p.underlineYs()
+		underlines = p.underlines()
 	}
 	var g = gstate{
 		Th:  1,
@@ -636,27 +680,33 @@ func (p Page) getPlainText(fonts map[string]*Font, markDeleted bool) (result str
 	var gstack []gstate
 
 	var textBuilder bytes.Buffer
-	showText := func(raw ...string) {
-		var decoded strings.Builder
-		for _, s := range raw {
-			decoded.WriteString(enc.Decode(s))
-		}
-		text := decoded.String()
+	showText := func(raw string) {
+		text := enc.Decode(raw)
+		advance := textAdvance(g, raw, text)
+		start := transformPoint(Point{X: g.Tm[2][0], Y: g.Tm[2][1] + g.Trise}, g.CTM)
+		nextTm := matrix{{1, 0, 0}, {0, 1, 0}, {advance, 0, 1}}.mul(g.Tm)
+		end := transformPoint(Point{X: nextTm[2][0], Y: nextTm[2][1] + g.Trise}, g.CTM)
 
-		baseline := transformPoint(Point{X: g.Tm[2][0], Y: g.Tm[2][1] + g.Trise}, g.CTM)
-		if markDeleted && isUnderlinedText(baseline.Y, g.Tfs, underlineYs) && hasNonStructuralText(text) {
+		if markDeleted && isUnderlinedText(start, end, g.Tfs, underlines) && hasNonStructuralText(text) {
 			// Preserve the text because underlined history still matters for
 			// most fields. The business parser uses this invisible marker to
 			// ignore deleted executive entries only.
 			const deletedTextMarker = "\u2063"
-			if start := strings.IndexRune(text, '│'); start >= 0 {
-				start += len("│")
-				text = text[:start] + deletedTextMarker + text[start:]
+			if markerAt := strings.IndexRune(text, '│'); markerAt >= 0 {
+				markerAt += len("│")
+				text = text[:markerAt] + deletedTextMarker + text[markerAt:]
 			} else {
 				text = deletedTextMarker + text
 			}
 		}
 		textBuilder.WriteString(text)
+		g.Tm = nextTm
+	}
+
+	moveToNextTextLine := func() {
+		x := matrix{{1, 0, 0}, {0, 1, 0}, {0, -g.Tl, 1}}
+		g.Tlm = x.mul(g.Tlm)
+		g.Tm = g.Tlm
 	}
 
 	Interpret(strm, func(stk *Stack, op string) {
@@ -691,10 +741,8 @@ func (p Page) getPlainText(fonts map[string]*Font, markDeleted bool) (result str
 			g.Tm = ident
 			g.Tlm = ident
 		case "T*": // move to start of next line
-			x := matrix{{1, 0, 0}, {0, 1, 0}, {0, -g.Tl, 1}}
-			g.Tlm = x.mul(g.Tlm)
-			g.Tm = g.Tlm
-			showText("\n")
+			moveToNextTextLine()
+			textBuilder.WriteByte('\n')
 		case "TD":
 			if len(args) != 2 {
 				return
@@ -723,9 +771,17 @@ func (p Page) getPlainText(fonts map[string]*Font, markDeleted bool) (result str
 			m[2][2] = 1
 			g.Tm = m
 			g.Tlm = m
+		case "Tc":
+			if len(args) == 1 {
+				g.Tc = args[0].Float64()
+			}
 		case "Ts":
 			if len(args) == 1 {
 				g.Trise = args[0].Float64()
+			}
+		case "Tw":
+			if len(args) == 1 {
+				g.Tw = args[0].Float64()
 			}
 		case "Tz":
 			if len(args) == 1 {
@@ -747,27 +803,35 @@ func (p Page) getPlainText(fonts map[string]*Font, markDeleted bool) (result str
 			if len(args) != 3 {
 				return // skip invalid operator
 			}
-			fallthrough
+			g.Tw = args[0].Float64()
+			g.Tc = args[1].Float64()
+			moveToNextTextLine()
+			showText(args[2].RawString())
 		case "'": // move to next line and show text
 			if len(args) != 1 {
 				return // skip invalid operator
 			}
-			fallthrough
+			moveToNextTextLine()
+			showText(args[0].RawString())
 		case "Tj": // show text
 			if len(args) != 1 {
 				return // skip invalid operator
 			}
 			showText(args[0].RawString())
 		case "TJ": // show text, allowing individual glyph positioning
+			if len(args) != 1 {
+				return // skip invalid operator
+			}
 			v := args[0]
-			raw := make([]string, 0, v.Len())
 			for i := 0; i < v.Len(); i++ {
 				x := v.Index(i)
 				if x.Kind() == String {
-					raw = append(raw, x.RawString())
+					showText(x.RawString())
+					continue
 				}
+				advance := -x.Float64() / 1000 * g.Tfs * g.Th
+				g.Tm = matrix{{1, 0, 0}, {0, 1, 0}, {advance, 0, 1}}.mul(g.Tm)
 			}
-			showText(raw...)
 		}
 	})
 	return textBuilder.String(), nil

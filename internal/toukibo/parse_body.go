@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	deletedTextMarker = "\u2063"
+	deletedTextMarker         = "\u2063"
+	registryWarekiDatePattern = `(?:明治|大正|昭和|平成|令和)[　 ]*(?:元|[０-９0-9]+)年[　 ]*[０-９0-9]+月[　 ]*[０-９0-9]+日`
 
 	revert1         = "┃　　　　　　　　├─────────────────────────────────────┨"
 	revert2         = "┃　　　　　　　　├───────────────────────┬─────────────┨"
@@ -580,12 +581,13 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 
 	// ex 北海道知事の命令により解散
 	// ex 会社法４７２条第１項の規定により解散
-	pattern := fmt.Sprintf("([%s]+日)([%s]*)により解散", ZenkakuStringPattern, ZenkakuStringPattern)
+	pattern := fmt.Sprintf(`(%s)[%s]*?により解散`, registryWarekiDatePattern, ZenkakuStringPattern)
 	regex := regexp.MustCompile(pattern)
 
-	matches := regex.FindStringSubmatch(s2)
+	matches := regex.FindAllStringSubmatch(s2, -1)
 	if len(matches) > 0 {
-		h.HoujinDissolvedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
+		latest := matches[len(matches)-1]
+		h.HoujinDissolvedAt = ZenkakuToHankaku(strings.TrimSpace(latest[1]))
 		return true
 	}
 	return false
@@ -593,12 +595,13 @@ func (h *HoujinBody) ConsumeHoujinDissolvedAt(s string) bool {
 
 func (h *HoujinBody) ConsumeHoujinContinuedAt(s string) bool {
 	// 継続日も特殊なフォーマット
-	pattern := fmt.Sprintf("┃会社継続　*│　*([%s]+日)会社継続", ZenkakuStringPattern)
+	pattern := fmt.Sprintf("┃会社継続　*│　*(%s)会社継続", registryWarekiDatePattern)
 	regex := regexp.MustCompile(pattern)
 
-	matches := regex.FindStringSubmatch(s)
+	matches := regex.FindAllStringSubmatch(s, -1)
 	if len(matches) > 0 {
-		h.HoujinContinuedAt = ZenkakuToHankaku(strings.TrimSpace(matches[1]))
+		latest := matches[len(matches)-1]
+		h.HoujinContinuedAt = ZenkakuToHankaku(strings.TrimSpace(latest[1]))
 		return true
 	}
 	return false

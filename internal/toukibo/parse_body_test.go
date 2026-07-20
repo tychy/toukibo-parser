@@ -2,6 +2,30 @@ package toukibo
 
 import "testing"
 
+func TestConsumeHoujinDissolvedAtUsesLatestDate(t *testing.T) {
+	h := &HoujinBody{}
+	s := "┃解　散　　　　│　令和3年1月1日株主総会の決議により解散┃" +
+		"┃解　散　　　　│　令和5年12月15日株主総会の決議により解散┃"
+	if !h.ConsumeHoujinDissolvedAt(s) {
+		t.Fatal("dissolution was not consumed")
+	}
+	if h.HoujinDissolvedAt != "令和5年12月15日" {
+		t.Fatalf("latest dissolution: want 令和5年12月15日, got %q", h.HoujinDissolvedAt)
+	}
+}
+
+func TestConsumeHoujinContinuedAtUsesLatestDate(t *testing.T) {
+	h := &HoujinBody{}
+	s := "┃会社継続　　　│　令和4年1月22日会社継続┃" +
+		"┃会社継続　　　│　令和6年2月3日会社継続┃"
+	if !h.ConsumeHoujinContinuedAt(s) {
+		t.Fatal("continuation was not consumed")
+	}
+	if h.HoujinContinuedAt != "令和6年2月3日" {
+		t.Fatalf("latest continuation: want 令和6年2月3日, got %q", h.HoujinContinuedAt)
+	}
+}
+
 func TestGetHoujinExecutiveValueDeletedUnderline(t *testing.T) {
 	s := "┃　　　　　　　　│" + deletedTextMarker + "　取締役　　　　　山　田　太　郎　　　　　　　　　　　　　　　　　　　　　┃" +
 		revert2 +
