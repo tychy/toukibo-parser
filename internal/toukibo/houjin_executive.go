@@ -10,7 +10,7 @@ type HoujinExecutiveValue struct {
 	Position   string `yaml:"Position"`
 	Address    string
 	IsValid    bool
-	RegisterAt string
+	RegisterAt string `yaml:"RegisterAt"`
 	ResignedAt string
 }
 
@@ -26,9 +26,9 @@ func (hva HoujinExecutiveValueArray) String() string {
 	for _, hv := range hva {
 		b.WriteString("  - Name: " + hv.Name + "\n")
 		b.WriteString("    Position: " + hv.Position + "\n")
+		b.WriteString("    RegisterAt: " + hv.RegisterAt + "\n")
 		if DebugOn {
 			b.WriteString("    IsValid: " + fmt.Sprintf("%v", hv.IsValid) + "\n")
-			b.WriteString("    RegisterAt: " + hv.RegisterAt + "\n")
 			b.WriteString("    ResignedAt: " + hv.ResignedAt + "\n")
 		}
 	}

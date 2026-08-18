@@ -119,12 +119,22 @@ func TestToukiboParser(t *testing.T) {
 			if len(execs) != len(td.HoujinExecutiveValues) {
 				t.Fatalf("executive count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinExecutiveValues), len(execs))
 			}
+			assertRegisterAt := false
+			for _, ev := range td.HoujinExecutiveValues {
+				if ev.RegisterAt != "" {
+					assertRegisterAt = true
+					break
+				}
+			}
 			for i, v := range execs {
 				if v.Name != td.HoujinExecutiveValues[i].Name {
 					t.Fatalf("executive name is not match,\nwant : %s,\ngot  : %s", td.HoujinExecutiveValues[i].Name, v.Name)
 				}
 				if v.Position != td.HoujinExecutiveValues[i].Position {
 					t.Fatalf("executive position is not match,\nwant : %s,\ngot  : %s", td.HoujinExecutiveValues[i].Position, v.Position)
+				}
+				if assertRegisterAt && v.RegisterAt != td.HoujinExecutiveValues[i].RegisterAt {
+					t.Fatalf("executive registerAt is not match,\nwant : %s,\ngot  : %s", td.HoujinExecutiveValues[i].RegisterAt, v.RegisterAt)
 				}
 			}
 

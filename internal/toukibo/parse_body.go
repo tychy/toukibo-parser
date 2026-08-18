@@ -57,10 +57,28 @@ func getValue(s string) (string, error) {
 	return value, nil
 }
 
+var (
+	registerEventRejectPattern = regexp.MustCompile(`就任|重任|辞任|退任|死亡|抹消|廃止|解任|退社|移記|更正|資格|責任変更`)
+	registerWarekiDateCapture  = regexp.MustCompile(`((?:明治|大正|昭和|平成|令和)[　 ]*(?:元|[０-９0-9]+)年[　 ]*[０-９0-9]+月[　 ]*[０-９0-9]+日)`)
+)
+
 func getRegisterAt(s string) (string, error) {
-	date, found := RegisterDateExtractor.Extract(s)
-	if found {
-		return trimAllSpace(date), nil
+	matches := registerWarekiDateCapture.FindAllStringSubmatchIndex(s, -1)
+	for i := len(matches) - 1; i >= 0; i-- {
+		dateRaw := s[matches[i][2]:matches[i][3]]
+		rest := s[matches[i][1]:]
+		regIdx := strings.Index(rest, "登記")
+		if regIdx < 0 {
+			continue
+		}
+		if registerEventRejectPattern.MatchString(rest[:regIdx]) {
+			continue
+		}
+		date := normalizeWarekiDate(dateRaw)
+		if _, ok := warekiDateValue(date); !ok {
+			continue
+		}
+		return date, nil
 	}
 	return "", fmt.Errorf("failed to get registerAt from %s", s)
 }
@@ -70,7 +88,7 @@ func getResignedAt(s string) (string, error) {
 	// 注：資格変更は新しい役職側に記録されるため、対象エントリ自体の退任とは扱わない
 	date, found := ExtractDateWithSuffix(s, []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "責任変更"})
 	if found {
-		return trimAllSpace(date), nil
+		return normalizeWarekiDate(date), nil
 	}
 	return "", fmt.Errorf("failed to get resignedAt from %s", s)
 }
@@ -262,6 +280,11 @@ func extractDates(three []string) (registerAt, resignedAt string) {
 			resignedAt = at
 		}
 	}
+	if registerAt == "" {
+		if at, _ := getRegisterAt(strings.Join(three, "")); at != "" {
+			registerAt = at
+		}
+	}
 	return
 }
 
@@ -397,7 +420,9 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 
 		// 結果の更新
 		if len(evs) > 0 {
+			start := len(evsArr)
 			evsArr = append(evsArr, evs...)
+			inheritRegisterAtFromPrevious(evsArr, start)
 		} else if currentIdx > 0 && registerAt != "" {
 			// 役員がないのに登記日がある場合は前の役員処理は上で完了しているので、ここではスキップ
 			continue
@@ -412,6 +437,23 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 	}
 
 	return evsArr, nil
+}
+
+func inheritRegisterAtFromPrevious(evsArr HoujinExecutiveValueArray, start int) {
+	for i := start; i < len(evsArr); i++ {
+		if evsArr[i].RegisterAt != "" || evsArr[i].ResignedAt != "" {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if evsArr[j].Name != evsArr[i].Name || evsArr[j].Position != evsArr[i].Position {
+				continue
+			}
+			if evsArr[j].RegisterAt != "" && evsArr[j].ResignedAt == "" {
+				evsArr[i].RegisterAt = evsArr[j].RegisterAt
+			}
+			break
+		}
+	}
 }
 
 func postProcessResponsibilityChanges(evsArr HoujinExecutiveValueArray) {

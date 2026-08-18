@@ -33,7 +33,7 @@ func TestParseBodyMainParsesHoujinPurposeWithHistory(t *testing.T) {
 	if h.HoujinPurpose[1].Value != "１．新目的" {
 		t.Fatalf("unexpected latest purpose value: %q", h.HoujinPurpose[1].Value)
 	}
-	if h.HoujinPurpose[1].RegisterAt != "令和３年７月１２日" {
+	if h.HoujinPurpose[1].RegisterAt != "令和3年7月12日" {
 		t.Fatalf("unexpected registerAt: %q", h.HoujinPurpose[1].RegisterAt)
 	}
 }
