@@ -153,7 +153,11 @@ func TestToukiboParser(t *testing.T) {
 				}
 			}
 
-			// RepresentativeNames
+			// Representatives / RepresentativeNames
+			reps, err := h.GetHoujinRepresentatives()
+			if err != nil {
+				t.Fatal(err)
+			}
 			repNames, err := h.GetHoujinRepresentativeNames()
 			if err != nil {
 				t.Fatal(err)
@@ -161,9 +165,18 @@ func TestToukiboParser(t *testing.T) {
 			if len(repNames) != len(td.HoujinRepresentativeNames) {
 				t.Fatalf("representative name count is not match,\nwant : %d,\ngot  : %d", len(td.HoujinRepresentativeNames), len(repNames))
 			}
+			if len(reps) != len(repNames) {
+				t.Fatalf("representative count is not match names,\nwant : %d,\ngot  : %d", len(repNames), len(reps))
+			}
 			for i, v := range repNames {
 				if v != td.HoujinRepresentativeNames[i] {
 					t.Fatalf("representative name is not match,\nwant : %s,\ngot  : %s", td.HoujinRepresentativeNames[i], v)
+				}
+				if reps[i].Name != v {
+					t.Fatalf("representative object name is not match,\nwant : %s,\ngot  : %s", v, reps[i].Name)
+				}
+				if v != "" && reps[i].Position == "" {
+					t.Fatalf("representative position is empty: %s", reps[i].Name)
 				}
 			}
 

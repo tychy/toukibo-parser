@@ -168,8 +168,12 @@ func (h *Houjin) GetHoujinExecutiveNames() ([]string, error) {
 	return names, nil
 }
 
+func (h *Houjin) GetHoujinRepresentatives() (HoujinExecutiveValueArray, error) {
+	return h.body.GetHoujinRepresentatives()
+}
+
 func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
-	r, err := h.body.GetHoujinRepresentatives()
+	r, err := h.GetHoujinRepresentatives()
 	if err != nil {
 		return nil, err
 	}
