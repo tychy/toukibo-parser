@@ -11,6 +11,10 @@ func trimAllSpace(s string) string {
 	return strings.ReplaceAll(s, "　", "")
 }
 
+func normalizeWarekiDate(s string) string {
+	return ZenkakuToHankaku(trimAllSpace(s))
+}
+
 func trimLeadingTrailingSpace(s string) string {
 	// 先頭のスペースを削除
 	s = strings.TrimLeft(s, "　")
@@ -32,7 +36,7 @@ func trimChangeAndRegisterAt(s string) (string, string, string) {
 	regex := regexp.MustCompile(pattern)
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		return trimPattern(s, pattern), trimAllSpace(matches[1]), trimAllSpace(matches[2])
+		return trimPattern(s, pattern), normalizeWarekiDate(matches[1]), normalizeWarekiDate(matches[2])
 	}
 	return s, "", ""
 }
@@ -43,7 +47,7 @@ func trimRegisterAt(s string) (string, string) {
 	regex := regexp.MustCompile(pattern)
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) > 0 {
-		return trimPattern(s, pattern), trimAllSpace(matches[1])
+		return trimPattern(s, pattern), normalizeWarekiDate(matches[1])
 	}
 	return s, ""
 }

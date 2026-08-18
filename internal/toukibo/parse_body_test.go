@@ -81,4 +81,7 @@ func TestGetHoujinExecutiveValueQualificationChange(t *testing.T) {
 	if !executives[1].IsValid {
 		t.Fatal("current executive must remain valid after qualification change")
 	}
+	if executives[1].RegisterAt != "令和3年3月31日" {
+		t.Fatalf("current executive registerAt: want 令和3年3月31日, got %q", executives[1].RegisterAt)
+	}
 }
