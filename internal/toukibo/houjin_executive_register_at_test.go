@@ -381,6 +381,24 @@ func TestGetHoujinExecutiveValueRegisterAt(t *testing.T) {
 				{Name: "山田太郎", Position: "監査役", IsValid: true},
 			},
 		},
+		{
+			name: "outside auditor label without a name is not another person",
+			input: "┃　　　　　　　　│　監査役　　　　　山　田　太　郎　　　　　　　│令和　５年　６月２３日重任┃" +
+				"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨" +
+				"┃　　　　　　　　│　社外監査役　　　　　　　　　　　　　　　　　│令和　５年　６月２９日登記┃",
+			want: []wantExecutive{
+				{Name: "山田太郎", Position: "監査役", RegisterAt: "令和5年6月29日", IsValid: true},
+			},
+		},
+		{
+			name: "outside director label without a name is not another person",
+			input: "┃　　　　　　　　│　取締役　　　　　鈴　木　花　子　　　　　　　│令和　７年　６月２７日就任┃" +
+				"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨" +
+				"┃　　　　　　　　│　社外取締役　　　　　　　　　　　　　　　　　│令和　７年　７月　２日登記┃",
+			want: []wantExecutive{
+				{Name: "鈴木花子", Position: "取締役", RegisterAt: "令和7年7月2日", IsValid: true},
+			},
+		},
 	}
 
 	for _, tt := range tests {
