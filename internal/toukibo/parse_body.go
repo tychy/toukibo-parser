@@ -184,13 +184,21 @@ func getMultipleExecutiveNamesAndPositions(s string) (result []struct {
 
 			onNameAndPos = false
 		}
+		// 「社外監査役」「社外取締役」だけの行は資格注記。役職パターンの末尾一致で空氏名の別人を作らない。
+		if regexp.MustCompile(`^　*社外(監査役|取締役)　*$`).MatchString(b) {
+			continue
+		}
 		if match := regexp.MustCompile(fmt.Sprintf("(%s)　+([%s]+)", positionsPattern, ZenkakuStringPattern)).FindStringSubmatch(b); len(match) == 3 {
+			name := trimAllSpace(match[2])
+			if name == "" {
+				continue
+			}
 			// NOTE: 名前や役職が複数行にまたがる可能性があり、Name と Position は次行以降の内容も踏まえて確定させる必要がある
 			onNameAndPos = true
 			result = append(result, struct {
 				Name, Position string
 				IsDeleted      bool
-			}{Name: trimAllSpace(match[2]), Position: trimAllSpace(match[1]), IsDeleted: isDeleted})
+			}{Name: name, Position: trimAllSpace(match[1]), IsDeleted: isDeleted})
 			continue
 		}
 
@@ -203,9 +211,16 @@ func getMultipleExecutiveNamesAndPositions(s string) (result []struct {
 		}
 	}
 
+	n := 0
 	for i := 0; i < len(result); i++ {
 		result[i].Name = normalizeExecutiveName(result[i].Name)
+		if result[i].Name == "" {
+			continue
+		}
+		result[n] = result[i]
+		n++
 	}
+	result = result[:n]
 
 	return
 }
