@@ -20,7 +20,10 @@ jobs:
       run: make build
 
   test:
-    permissions: write-all
+    # Fork / Dependabot PRs run the build job without access to private samples.
+    if: github.actor != 'dependabot[bot]' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3

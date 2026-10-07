@@ -23,7 +23,7 @@ PY
 
 # 認証情報はコマンドライン引数に載せず、標準入力の設定として curl に渡す。
 printf 'user = "%s:%s"\n' "$R2_ACCESS_KEY_ID" "$R2_SECRET_ACCESS_KEY" |
-    curl --config - --fail --silent --show-error \
+    curl --disable --config - --fail --silent --show-error \
         --aws-sigv4 "aws:amz:auto:s3" \
         --output "$archive" \
         "https://$account_id.r2.cloudflarestorage.com/$bucket/$object"

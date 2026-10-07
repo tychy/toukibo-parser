@@ -39,13 +39,17 @@ HoujinContinuedAt:
 ```
 
 #### テスト実行
-テストデータは非公開です。R2 の読み取り用 API トークンを環境変数に設定してから取得します。
+テストデータは非公開です。curl 7.75.0 以降、Python 3、unzip が必要です。R2 で `toukibo-parser-samples` バケットだけを対象にした Object Read only トークンを作成し、アカウント ID、Access Key ID、Secret Access Key を次の環境変数に設定してから取得します。秘密値はシェル履歴やリポジトリに保存しないでください。
 
 ```
 % export R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=...
 % make get/sample
 % make test
 ```
+
+GitHub Actions では `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY` を Repository Secrets に登録します。fork / Dependabot の PR はビルドのみ実行し、非公開サンプルを使うテストはスキップします。`pull_request_target` で外部 PR に秘密値を渡さないでください。
+
+バケットの r2.dev 公開アクセスは無効のままにし、認証のないカスタムドメインも接続しないでください。リポジトリの非公開化や URL の削除だけでは、既知の公開 URL からのダウンロードを防げません。
 
 テストデータはR2上の変更不可なスナップショットとして管理します。`testdata-snapshot.json` が使用するオブジェクト、SHA-256、サンプル数を固定し、`make get/sample` はダウンロード後に整合性を検証します。
 
