@@ -20,7 +20,10 @@ jobs:
       run: make build
 
   test:
-    permissions: write-all
+    # Fork / Dependabot PRs run the build job without access to private samples.
+    if: github.actor != 'dependabot[bot]' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -31,6 +34,10 @@ jobs:
         cache: true
         cache-dependency-path: src
     - name: Get sample
+      env:
+        R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       run: make get/sample
     - name: Test
       run: make test
