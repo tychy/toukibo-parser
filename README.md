@@ -39,7 +39,10 @@ HoujinContinuedAt:
 ```
 
 #### テスト実行
+テストデータは非公開です。R2 の読み取り用 API トークンを環境変数に設定してから取得します。
+
 ```
+% export R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=...
 % make get/sample
 % make test
 ```

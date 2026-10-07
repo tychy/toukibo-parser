@@ -1,5 +1,4 @@
 BUCKET_NAME=toukibo-parser-samples
-URL=https://pub-a26a7972d1ea437b983bf6696a7d847e.r2.dev
 SNAPSHOT_MANIFEST=testdata-snapshot.json
 DATA_DIR=testdata
 export NUM_SAMPLE=1779
@@ -68,7 +67,7 @@ put/sample:
 	BUCKET_NAME=$(BUCKET_NAME) SNAPSHOT_MANIFEST=$(SNAPSHOT_MANIFEST) ./scripts/put-sample-snapshot.sh
 
 get/sample: clean/data
-	SAMPLE_URL=$(URL) SNAPSHOT_MANIFEST=$(SNAPSHOT_MANIFEST) ./scripts/get-sample-snapshot.sh
+	BUCKET_NAME=$(BUCKET_NAME) SNAPSHOT_MANIFEST=$(SNAPSHOT_MANIFEST) ./scripts/get-sample-snapshot.sh
 
 open/sample:
 ifndef TARGET

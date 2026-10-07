@@ -2,7 +2,10 @@
 set -euo pipefail
 
 manifest=${SNAPSHOT_MANIFEST:-testdata-snapshot.json}
-url=${SAMPLE_URL:?SAMPLE_URL is required}
+bucket=${BUCKET_NAME:?BUCKET_NAME is required}
+account_id=${R2_ACCOUNT_ID:?R2_ACCOUNT_ID is required}
+: "${R2_ACCESS_KEY_ID:?R2_ACCESS_KEY_ID is required}"
+: "${R2_SECRET_ACCESS_KEY:?R2_SECRET_ACCESS_KEY is required}"
 archive=${SAMPLE_ARCHIVE:-testdata.zip}
 
 IFS=$'\t' read -r object expected_sha256 expected_samples < <(python3 - "$manifest" <<'PY'
@@ -18,7 +21,12 @@ print(manifest["object"], manifest["sha256"], manifest["samples"], sep="\t")
 PY
 )
 
-curl --fail --location --silent --show-error --output "$archive" "$url/$object"
+# 認証情報はコマンドライン引数に載せず、標準入力の設定として curl に渡す。
+printf 'user = "%s:%s"\n' "$R2_ACCESS_KEY_ID" "$R2_SECRET_ACCESS_KEY" |
+    curl --config - --fail --silent --show-error \
+        --aws-sigv4 "aws:amz:auto:s3" \
+        --output "$archive" \
+        "https://$account_id.r2.cloudflarestorage.com/$bucket/$object"
 actual_sha256=$(python3 - "$archive" <<'PY'
 import hashlib
 import sys

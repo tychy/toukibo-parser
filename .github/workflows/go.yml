@@ -31,6 +31,10 @@ jobs:
         cache: true
         cache-dependency-path: src
     - name: Get sample
+      env:
+        R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       run: make get/sample
     - name: Test
       run: make test
