@@ -23,6 +23,9 @@ var JapaneseNumberUnits = []UnitMultiplier{
 func ParseJapaneseNumber(s string, units []UnitMultiplier) (int, error) {
 	// 全角数字を半角に変換
 	s = ZenkakuToHankaku(s)
+	// 桁区切りのカンマ（全角・半角）は無視する。
+	// 例: 金４，０００万円 -> 4000万円 -> 40000000
+	s = strings.NewReplacer("，", "", ",", "").Replace(s)
 	
 	total := 0
 	remaining := s
