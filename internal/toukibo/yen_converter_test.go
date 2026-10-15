@@ -56,6 +56,21 @@ func TestYenToNumber(t *testing.T) {
 			expected: 1,
 		},
 		{
+			// 桁区切りカンマ（全角）
+			input:    "金４，０００万円",
+			expected: 40000000,
+		},
+		{
+			// 桁区切りカンマ（半角）
+			input:    "金1,234万円",
+			expected: 12340000,
+		},
+		{
+			// 億・万にまたがる桁区切り
+			input:    "金１兆４，０４０億６，５００万円",
+			expected: 1404065000000,
+		},
+		{
 			input:    "",
 			expected: 0,
 		},
