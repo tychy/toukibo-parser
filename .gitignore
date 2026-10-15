@@ -1,6 +1,7 @@
 bin
 testdata
 testdata.zip
+.cloudflare
 .DS_Store
 data
 
