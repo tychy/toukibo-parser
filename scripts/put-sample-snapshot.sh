@@ -69,7 +69,8 @@ with open(path, "w", encoding="utf-8") as f:
     f.write("\n")
 PY
 
-wrangler r2 object put "$bucket/$object" --file "$archive" --remote
+# cf は環境の CLOUDFLARE_API_TOKEN を OAuth より優先するため、子プロセスから外して cf auth のプロファイルを使う。
+env -u CLOUDFLARE_API_TOKEN cf r2 objects put "$object" --bucket-name "$bucket" --file "$archive"
 mv "$temporary_manifest" "$manifest"
 trap - EXIT
 
