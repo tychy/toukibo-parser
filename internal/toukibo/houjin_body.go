@@ -174,10 +174,13 @@ func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
 	return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
 }
 
-// GetHoujinFormerExecutives は、退任・辞任などにより現任でなくなった役員を返す。
-// 登記簿（履歴事項）に記載が残っている範囲の行のみを対象とし、後任の登記で抹消されただけの行
-// （重任・資格変更などで置き換わった過去の行）は含めない。
-func (h *HoujinBody) GetHoujinFormerExecutives() HoujinExecutiveValueArray {
+// GetHoujinExecutiveHistory は、登記簿の役員欄に記載されている役員の各行を、記載順で返す。
+// 現在の役員（IsValid=true）に加え、退任・辞任などで登記記録が終了した行も含む。
+// 終了は ResignedAt または ResignedReason で示される（日付が読み取れない場合は
+// ResignedAt が空で ResignedReason のみ入る）。
+// 重任・資格変更などで後任の登記に置き換わり、取り消し線だけが付いた行は、
+// 終了の記載が無いため含まない。
+func (h *HoujinBody) GetHoujinExecutiveHistory() HoujinExecutiveValueArray {
 	if len(h.HoujinExecutive) == 0 {
 		return HoujinExecutiveValueArray{}
 	}
@@ -191,10 +194,22 @@ func (h *HoujinBody) GetHoujinFormerExecutives() HoujinExecutiveValueArray {
 
 	res := make(HoujinExecutiveValueArray, 0, len(all))
 	for _, v := range all {
-		if v.IsValid || v.ResignedAt == "" {
+		if !v.IsValid && v.ResignedReason == "" {
 			continue
 		}
 		res = append(res, v)
+	}
+	return res
+}
+
+// GetHoujinFormerExecutives は、GetHoujinExecutiveHistory から現在の役員を除いた行を返す。
+func (h *HoujinBody) GetHoujinFormerExecutives() HoujinExecutiveValueArray {
+	history := h.GetHoujinExecutiveHistory()
+	res := make(HoujinExecutiveValueArray, 0, len(history))
+	for _, v := range history {
+		if !v.IsValid {
+			res = append(res, v)
+		}
 	}
 	return res
 }

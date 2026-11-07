@@ -57,3 +57,43 @@ func TestGetHoujinFormerExecutivesEmpty(t *testing.T) {
 		t.Fatalf("want empty, got %+v", got)
 	}
 }
+
+func TestGetHoujinExecutiveHistory(t *testing.T) {
+	body := &HoujinBody{
+		HoujinExecutive: []HoujinExecutiveValueArray{
+			{
+				{Name: "現任太郎", Position: "代表取締役", RegisterAt: "令和3年4月1日", IsValid: true},
+				// 重任で置き換わっただけの行は履歴に含めない
+				{Name: "重任花子", Position: "取締役", RegisterAt: "令和2年4月1日", IsValid: false},
+				{Name: "重任花子", Position: "取締役", RegisterAt: "令和3年4月1日", IsValid: true},
+			},
+			{
+				{Name: "退任次郎", Position: "取締役", RegisterAt: "令和3年5月12日", ResignedAt: "令和3年2月28日", ResignedReason: "辞任", IsValid: false},
+				// 退任日が読み取れない行も、事由があれば履歴に含める
+				{Name: "不明三郎", Position: "監査役", ResignedReason: "退任", IsValid: false},
+			},
+		},
+	}
+
+	got := body.GetHoujinExecutiveHistory()
+	want := []struct {
+		name, position, resignedAt, resignedReason string
+		isValid                                    bool
+	}{
+		{"現任太郎", "代表取締役", "", "", true},
+		{"重任花子", "取締役", "", "", true},
+		{"退任次郎", "取締役", "令和3年2月28日", "辞任", false},
+		{"不明三郎", "監査役", "", "退任", false},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("history count: want %d, got %d (%+v)", len(want), len(got), got)
+	}
+	for i, w := range want {
+		g := got[i]
+		if g.Name != w.name || g.Position != w.position || g.ResignedAt != w.resignedAt ||
+			g.ResignedReason != w.resignedReason || g.IsValid != w.isValid {
+			t.Fatalf("history[%d] = %+v, want %+v", i, g, w)
+		}
+	}
+}

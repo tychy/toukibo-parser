@@ -177,6 +177,11 @@ func (h *Houjin) GetHoujinFormerExecutives() HoujinExecutiveValueArray {
 	return h.body.GetHoujinFormerExecutives()
 }
 
+// GetHoujinExecutiveHistory は、現在の役員と、退任・辞任などで終了した役員の行を登記簿の記載順で返す。
+func (h *Houjin) GetHoujinExecutiveHistory() HoujinExecutiveValueArray {
+	return h.body.GetHoujinExecutiveHistory()
+}
+
 func (h *Houjin) GetHoujinRepresentativeNames() ([]string, error) {
 	r, err := h.GetHoujinRepresentatives()
 	if err != nil {
