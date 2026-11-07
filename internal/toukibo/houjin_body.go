@@ -97,13 +97,13 @@ func (h *HoujinBody) isCurrentlyDissolved() bool {
 }
 
 func postProcessResponsibilityChangesGlobal(evsArr []HoujinExecutiveValue) {
-	// 1. ResignedAtに「責任変更」が含まれている役員を無効化
+	// 1. 責任変更で退任した役員を無効化
 	for i := range evsArr {
 		if !evsArr[i].IsValid {
 			continue
 		}
 
-		if strings.Contains(evsArr[i].ResignedAt, "責任変更") {
+		if evsArr[i].ResignedReason == "責任変更" {
 			evsArr[i].IsValid = false
 			if DebugOn {
 				fmt.Printf("Invalidating (resigned): %s %s\n", evsArr[i].Name, evsArr[i].Position)
@@ -172,6 +172,31 @@ func (h *HoujinBody) GetHoujinExecutives() ([]HoujinExecutiveValue, error) {
 		return []HoujinExecutiveValue{}, nil
 	}
 	return []HoujinExecutiveValue{}, fmt.Errorf("not found executives")
+}
+
+// GetHoujinFormerExecutives は、退任・辞任などにより現任でなくなった役員を返す。
+// 登記簿（履歴事項）に記載が残っている範囲の行のみを対象とし、後任の登記で抹消されただけの行
+// （重任・資格変更などで置き換わった過去の行）は含めない。
+func (h *HoujinBody) GetHoujinFormerExecutives() HoujinExecutiveValueArray {
+	if len(h.HoujinExecutive) == 0 {
+		return HoujinExecutiveValueArray{}
+	}
+
+	var all []HoujinExecutiveValue
+	for _, e := range h.HoujinExecutive {
+		all = append(all, e...)
+	}
+
+	postProcessResponsibilityChangesGlobal(all)
+
+	res := make(HoujinExecutiveValueArray, 0, len(all))
+	for _, v := range all {
+		if v.IsValid || v.ResignedAt == "" {
+			continue
+		}
+		res = append(res, v)
+	}
+	return res
 }
 
 func (h *HoujinBody) GetHoujinRepresentatives() ([]HoujinExecutiveValue, error) {
