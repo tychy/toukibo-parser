@@ -83,14 +83,32 @@ func getRegisterAt(s string) (string, error) {
 	return "", fmt.Errorf("failed to get registerAt from %s", s)
 }
 
-func getResignedAt(s string) (string, error) {
+// resignedAt は役員の退任日とその事由。
+// At は正規化した和暦日付（例: 令和3年6月22日）、Reason は辞任・退任などの事由。
+type resignedAt struct {
+	At     string
+	Reason string
+}
+
+var (
 	// 辞任/退任の他に死亡、抹消、廃止、解任、退社、責任変更も含める
 	// 注：資格変更は新しい役職側に記録されるため、対象エントリ自体の退任とは扱わない
-	date, found := ExtractDateWithSuffix(s, []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "責任変更"})
-	if found {
-		return normalizeWarekiDate(date), nil
+	resignedSuffixes = []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "責任変更"}
+	resignedPattern  = regexp.MustCompile(fmt.Sprintf(`([%s]+)　*(%s)`, ZenkakuStringPattern, strings.Join(resignedSuffixes, "|")))
+)
+
+func getResignedAt(s string) (resignedAt, bool) {
+	matches := resignedPattern.FindStringSubmatch(s)
+	if len(matches) != 3 {
+		return resignedAt{}, false
 	}
-	return "", fmt.Errorf("failed to get resignedAt from %s", s)
+	// 「職務執行者辞任」のように日付を伴わない記載では、日付部分が役職名などになる。
+	// 日付として解釈できない場合も退任の記載自体はあるので、理由だけ返す。
+	at := normalizeWarekiDate(matches[1])
+	if _, ok := warekiDateValue(at); !ok {
+		return resignedAt{Reason: matches[2]}, true
+	}
+	return resignedAt{At: at, Reason: matches[2]}, true
 }
 
 func GetHoujinValue(s string) (HoujinValueArray, error) {
@@ -286,13 +304,19 @@ func extractExecutiveInfo(part string) ([]HoujinExecutiveValue, []string) {
 	return evs, three
 }
 
-func extractDates(three []string) (registerAt, resignedAt string) {
+func extractDates(three []string) (registerAt string, resigned resignedAt, found bool) {
 	for _, t := range three {
 		if at, _ := getRegisterAt(t); at != "" {
 			registerAt = at
 		}
-		if at, _ := getResignedAt(t); at != "" {
-			resignedAt = at
+		r, ok := getResignedAt(t)
+		if !ok {
+			continue
+		}
+		found = true
+		// 日付付きの記載を優先し、日付を伴わない記載で上書きしない
+		if r.At != "" || resigned.At == "" {
+			resigned = r
 		}
 	}
 	if registerAt == "" {
@@ -304,23 +328,28 @@ func extractDates(three []string) (registerAt, resignedAt string) {
 }
 
 func applyDatesToExecutives(evs []HoujinExecutiveValue, three []string) {
-	registerAt, resignedAt := extractDates(three)
+	registerAt, resigned, found := extractDates(three)
 
 	if registerAt != "" {
 		for i := range evs {
 			evs[i].RegisterAt = registerAt
 		}
 	}
-	if resignedAt != "" {
+	if found {
 		for i := range evs {
-			evs[i].ResignedAt = resignedAt
-			evs[i].IsValid = false
+			setResigned(&evs[i], resigned)
 		}
 	}
 }
 
+func setResigned(ev *HoujinExecutiveValue, resigned resignedAt) {
+	ev.ResignedAt = resigned.At
+	ev.ResignedReason = resigned.Reason
+	ev.IsValid = false
+}
+
 func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
-	currentEvs []HoujinExecutiveValue, three []string, registerAt, resignedAt string) {
+	currentEvs []HoujinExecutiveValue, three []string, registerAt string, resigned resignedAt, found bool) {
 
 	if idx == 0 {
 		return
@@ -330,8 +359,11 @@ func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 		// 役員がないのに登記日がある場合は前の役員を対象にする
 		if registerAt != "" {
 			evsArr[idx-1].RegisterAt = registerAt
-			evsArr[idx-1].ResignedAt = resignedAt
-			evsArr[idx-1].IsValid = false
+			if found {
+				setResigned(&evsArr[idx-1], resigned)
+			} else {
+				evsArr[idx-1].IsValid = false
+			}
 		}
 		return
 	}
@@ -427,11 +459,11 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 		applyDatesToExecutives(evs, three)
 
 		// 日付だけ抽出（前の役員処理用）
-		registerAt, resignedAt := extractDates(three)
+		registerAt, resigned, found := extractDates(three)
 
 		// 前の役員との関係処理
 		currentIdx := len(evsArr)
-		handlePreviousExecutiveRelation(evsArr, currentIdx, evs, three, registerAt, resignedAt)
+		handlePreviousExecutiveRelation(evsArr, currentIdx, evs, three, registerAt, resigned, found)
 
 		// 結果の更新
 		if len(evs) > 0 {
@@ -472,13 +504,13 @@ func inheritRegisterAtFromPrevious(evsArr HoujinExecutiveValueArray, start int) 
 }
 
 func postProcessResponsibilityChanges(evsArr HoujinExecutiveValueArray) {
-	// 1. ResignedAtに「責任変更」が含まれている役員を無効化
+	// 1. 責任変更で退任した役員を無効化
 	for i := range evsArr {
 		if !evsArr[i].IsValid {
 			continue
 		}
 
-		if strings.Contains(evsArr[i].ResignedAt, "責任変更") {
+		if evsArr[i].ResignedReason == "責任変更" {
 			evsArr[i].IsValid = false
 			if DebugOn {
 				fmt.Printf("Invalidating (resigned): %s %s\n", evsArr[i].Name, evsArr[i].Position)

@@ -159,10 +159,10 @@ func TestExtractDates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			registerAt, resignedAt := extractDates(tt.three)
-			if registerAt != tt.wantRegister || resignedAt != tt.wantResigned {
+			registerAt, resigned, _ := extractDates(tt.three)
+			if registerAt != tt.wantRegister || resigned.At != tt.wantResigned {
 				t.Fatalf("extractDates(%q) = (%q, %q), want (%q, %q)",
-					tt.three, registerAt, resignedAt, tt.wantRegister, tt.wantResigned)
+					tt.three, registerAt, resigned.At, tt.wantRegister, tt.wantResigned)
 			}
 		})
 	}
@@ -527,4 +527,37 @@ func TestGetHoujinExecutiveValueInheritsRegisterAtAcrossCorrection(t *testing.T)
 			{Name: "山田太郎", Position: "代表取締役", RegisterAt: "令和3年4月1日", IsValid: true},
 		})
 	})
+}
+
+func TestGetResignedAtReason(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		wantAt     string
+		wantReason string
+	}{
+		{name: "resign", input: "令和　３年　６月２２日辞任", wantAt: "令和3年6月22日", wantReason: "辞任"},
+		{name: "retire", input: "令和　３年　６月２２日退任", wantAt: "令和3年6月22日", wantReason: "退任"},
+		{name: "death", input: "令和　４年　７月　３日死亡", wantAt: "令和4年7月3日", wantReason: "死亡"},
+		{name: "dismiss", input: "令和　２年　１月１０日解任", wantAt: "令和2年1月10日", wantReason: "解任"},
+		{name: "erase", input: "令和　１年　８月　１日抹消", wantAt: "令和1年8月1日", wantReason: "抹消"},
+		{name: "abolish", input: "令和　５年　３月　１日廃止", wantAt: "令和5年3月1日", wantReason: "廃止"},
+		{name: "leave", input: "平成３０年　４月　１日退社", wantAt: "平成30年4月1日", wantReason: "退社"},
+		{name: "responsibility change", input: "令和　３年　５月１９日責任変更", wantAt: "令和3年5月19日", wantReason: "責任変更"},
+		// 「職務執行者辞任」のように日付を伴わない記載は、理由だけ返して退任日は空にする
+		{name: "no date before reason", input: "職務執行者辞任", wantReason: "辞任"},
+		{name: "date fragment before reason", input: "令和　３年　６月辞任", wantReason: "辞任"},
+		{name: "definition clause before abolish", input: "監査役の監査の範囲を会計に関するものに限定する旨の定款の定めの廃止", wantReason: "廃止"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := getResignedAt(tt.input)
+			if !ok {
+				t.Fatalf("getResignedAt(%q) = not found, want (%q, %q)", tt.input, tt.wantAt, tt.wantReason)
+			}
+			if got.At != tt.wantAt || got.Reason != tt.wantReason {
+				t.Fatalf("getResignedAt(%q) = (%q, %q), want (%q, %q)", tt.input, got.At, got.Reason, tt.wantAt, tt.wantReason)
+			}
+		})
+	}
 }
