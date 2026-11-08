@@ -233,6 +233,10 @@ func TestParseExecutiveHistoryWrappedResignation(t *testing.T) {
 		{"sample1789", "片岡宣秀", "職務執行者", "令和7年3月31日", "辞任"},
 		// 「令和６年６月３０日取締」「役が１名となったため抹消」
 		{"sample1790", "道面陽子", "代表取締役", "令和6年6月30日", "抹消"},
+		// 弁護士法人の社員の脱退
+		{"sample1792", "菅野律哉", "社員", "令和5年3月31日", "脱退"},
+		// 会計監査人の監査法人の合併
+		{"sample1793", "名古屋監査法人", "会計監査人", "令和5年10月2日", "合併"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.sample, func(t *testing.T) {
