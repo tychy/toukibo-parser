@@ -670,3 +670,53 @@ func TestGetHoujinExecutiveValueRestoredByErasure(t *testing.T) {
 		}
 	})
 }
+
+// 監査役会の定めの廃止に伴い、社外監査役の注記が外れて登記が書き直された記載。
+// 「廃止により変更」は退任ではないので、変更の行が現任になる。
+func TestGetHoujinExecutiveValueChangedByAbolition(t *testing.T) {
+	const (
+		blank = "　　　　　　　　　　　　　　　　　　　　　　　"
+		sep   = "┃　　　　　　　　│" + blank + "├－－－－－－－－－－－－－┨"
+	)
+	row := func(mid, right string) string {
+		return "┃　　　　　　　　│" + mid + "│" + right + "┃"
+	}
+	name := "　監査役　　　　　山　田　太　郎　　　　　　　"
+	outside := "　（社外監査役）　　　　　　　　　　　　　　　"
+	changed := row(name, "令和　５年　６月１９日就任") + sep +
+		row(outside, "令和　５年　６月１９日登記") + revert4 +
+		row(name, "令和　６年　３月２１日監査") +
+		row(blank, "役会の定めの廃止により変更") + sep +
+		row(blank, "令和　６年　３月２９日登記")
+
+	t.Run("changed row is current", func(t *testing.T) {
+		got, err := GetHoujinExecutiveValue(changed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertExecutives(t, got, []wantExecutive{
+			{Name: "山田太郎", Position: "監査役", RegisterAt: "令和5年6月19日"},
+			{Name: "山田太郎", Position: "監査役", RegisterAt: "令和6年3月29日", IsValid: true},
+		})
+		for i, v := range got {
+			if v.ResignedReason != "" {
+				t.Fatalf("executive[%d] must not have resignation: %+v", i, v)
+			}
+		}
+	})
+
+	t.Run("reappointment after change replaces changed row", func(t *testing.T) {
+		s := changed + revert4 +
+			row(name, "令和　７年　６月２０日重任") + sep +
+			row(blank, "令和　７年　６月２７日登記")
+		got, err := GetHoujinExecutiveValue(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertExecutives(t, got, []wantExecutive{
+			{Name: "山田太郎", Position: "監査役", RegisterAt: "令和5年6月19日"},
+			{Name: "山田太郎", Position: "監査役", RegisterAt: "令和6年3月29日"},
+			{Name: "山田太郎", Position: "監査役", RegisterAt: "令和7年6月27日", IsValid: true},
+		})
+	})
+}

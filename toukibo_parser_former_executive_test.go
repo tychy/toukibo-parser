@@ -180,3 +180,46 @@ func TestParseExecutiveRestoredByErasure(t *testing.T) {
 		})
 	}
 }
+
+// 監査役会の定めの廃止に伴い「◯日監査役会の定めの廃止により変更」と書き直された監査役の実サンプル。
+// 変更の行を「廃止」による退任として扱わないこと。
+func TestParseExecutiveChangedByAbolition(t *testing.T) {
+	tests := []struct {
+		sample, name string
+	}{
+		// 変更が最後の記載（現任）
+		{"sample1534", "門松優介"},
+		{"sample1209", "立木達"},
+		{"sample1788", "馬場文明"},
+		{"sample1788", "植村公彦"},
+		// 変更の後に重任
+		{"sample1787", "入江正邦"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.sample+"/"+tt.name, func(t *testing.T) {
+			h, err := ParseByPDFPath("testdata/pdf/" + tt.sample + ".pdf")
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, v := range h.GetHoujinExecutiveHistory() {
+				if v.Name == tt.name && !v.IsValid {
+					t.Fatalf("%s に終了行がある: %+v", tt.name, v)
+				}
+			}
+			execs, err := h.GetHoujinExecutives()
+			if err != nil {
+				t.Fatal(err)
+			}
+			current := 0
+			for _, v := range execs {
+				if v.Name == tt.name && v.Position == "監査役" {
+					current++
+				}
+			}
+			if current != 1 {
+				t.Fatalf("%s の現任行: want 1, got %d (%+v)", tt.name, current, execs)
+			}
+		})
+	}
+}
