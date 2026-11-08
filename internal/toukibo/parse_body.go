@@ -323,6 +323,32 @@ func resignedDateBefore(three []string, reason string) string {
 	if reason == "" {
 		return ""
 	}
+	return eventDateBefore(three, regexp.MustCompile(regexp.QuoteMeta(reason)), resignedDateBetweenRejectPattern, true)
+}
+
+// 任期の始まりを表す語。「職務執行者就任」「東京地方裁判所の選任」のように前に語句が付くこともある。
+var startedEventPattern = regexp.MustCompile(`就任|重任|加入|入社|資格変更|代表権付与|業務執行権付与|選任`)
+
+// 日付と始まりの語の間にこれらの語があれば、その日付は別の出来事のものとして扱う。
+var startedDateBetweenRejectPattern = regexp.MustCompile(`登記|辞任|退任|死亡|抹消|廃止|解任|退社|脱退|移記|更正|修正|責任変更|回復|変更|移転`)
+
+// 就任・重任などの登記そのものを抹消した記載（「重任の登記」「令和７年８月６日抹消」）。
+var startRegistrationErasedPattern = regexp.MustCompile(`(就任|重任|加入|入社|資格変更|代表権付与|業務執行権付与|選任)の登記[　 ]*(?:明治|大正|昭和|平成|令和)[^登]*抹消`)
+
+// startedDateOf は、記載の右の列から任期の始まり（就任・重任など）の日付を返す。無ければ空。
+// 重任などで置き換わった行は下線付きだが、その行の始まりの日付は有効なので下線の印は取り除いて読む。
+func startedDateOf(three []string) string {
+	cleaned := make([]string, len(three))
+	for i, t := range three {
+		cleaned[i] = strings.ReplaceAll(t, deletedTextMarker, "")
+	}
+	return eventDateBefore(cleaned, startedEventPattern, startedDateBetweenRejectPattern, false)
+}
+
+// eventDateBefore は、右の列の各行 three をつないだ記載から、word に当たる語の直前にある日付を返す。
+// 日付と語の間に reject に当たる語・別の日付がある日付は採用しない。
+// skipDeleted が true のときは、間や日付の行に下線（抹消）の印がある日付も採用しない。
+func eventDateBefore(three []string, word, reject *regexp.Regexp, skipDeleted bool) string {
 	joined := strings.Join(three, "")
 	// 各行の終わりの位置（joined 上のバイト位置）
 	lineEnds := make([]int, len(three))
@@ -342,17 +368,15 @@ func resignedDateBefore(three []string, reason string) string {
 
 	for _, m := range registerWarekiDateCapture.FindAllStringSubmatchIndex(joined, -1) {
 		rest := joined[m[1]:]
-		idx := strings.Index(rest, reason)
-		if idx < 0 {
+		loc := word.FindStringIndex(rest)
+		if loc == nil {
 			continue
 		}
-		between := rest[:idx]
-		if strings.Contains(between, deletedTextMarker) ||
-			resignedDateBetweenRejectPattern.MatchString(between) ||
-			registerWarekiDateCapture.MatchString(between) {
+		between := rest[:loc[0]]
+		if reject.MatchString(between) || registerWarekiDateCapture.MatchString(between) {
 			continue
 		}
-		if strings.Contains(lineOf(m[2]), deletedTextMarker) {
+		if skipDeleted && (strings.Contains(between, deletedTextMarker) || strings.Contains(lineOf(m[2]), deletedTextMarker)) {
 			continue
 		}
 		at := normalizeWarekiDate(joined[m[2]:m[3]])
@@ -405,6 +429,12 @@ func extractDates(three []string) (registerAt string, resigned resignedAt, found
 func applyDatesToExecutives(evs []HoujinExecutiveValue, three []string) {
 	registerAt, resigned, found := extractDates(three)
 
+	if startedAt := startedDateOf(three); startedAt != "" {
+		for i := range evs {
+			evs[i].StartedAt = startedAt
+		}
+	}
+
 	if registerAt != "" {
 		for i := range evs {
 			evs[i].RegisterAt = registerAt
@@ -431,6 +461,11 @@ func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 	}
 
 	if len(currentEvs) == 0 {
+		// 「重任の登記」「令和７年８月６日抹消」のように就任・重任の登記そのものが抹消された場合、
+		// 前の行の始まりの日付は無効になる（回復した行は、さらに前の行から引き継ぐ）
+		if startRegistrationErasedPattern.MatchString(strings.Join(three, "")) {
+			evsArr[idx-1].StartedAt = ""
+		}
 		// 退任日を直す更正（「令和８年３月３１日辞任」「令和８年４月１７日更正」）は登記日を伴わない。
 		// 直された元の退任は下線で抹消されているので、更正後の退任を前の役員に付ける。
 		if registerAt == "" && found && strings.Contains(strings.Join(three, ""), "更正") {
@@ -439,7 +474,10 @@ func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 		}
 		// 役員がないのに登記日がある場合は前の役員を対象にする
 		if registerAt != "" {
-			evsArr[idx-1].RegisterAt = registerAt
+			// 下線（抹消）付きの記載（取り消された辞任など）の登記日は、その欄の登記日として使わない
+			if !strings.Contains(strings.Join(three, ""), deletedTextMarker) {
+				evsArr[idx-1].RegisterAt = registerAt
+			}
 			if found {
 				setResigned(&evsArr[idx-1], resigned)
 			} else {
@@ -551,6 +589,7 @@ func GetHoujinExecutiveValue(s string) (HoujinExecutiveValueArray, error) {
 			start := len(evsArr)
 			evsArr = append(evsArr, evs...)
 			inheritRegisterAtFromPrevious(evsArr, start)
+			inheritStartedAtFromPrevious(evsArr, start)
 		} else if currentIdx > 0 && registerAt != "" {
 			// 役員がないのに登記日がある場合は前の役員処理は上で完了しているので、ここではスキップ
 			continue
@@ -580,6 +619,31 @@ func inheritRegisterAtFromPrevious(evsArr HoujinExecutiveValueArray, start int) 
 				evsArr[i].RegisterAt = evsArr[j].RegisterAt
 			}
 			break
+		}
+	}
+}
+
+// inheritStartedAtFromPrevious は、始まりの日付が無い行（住所移転・氏の変更・更正・回復などで書き直した行）に、
+// 同じ氏名・資格の前の行の始まりの日付を引き継ぐ。始まりの日付が無い行は飛ばしてさらに前を見るが、
+// 退任で終わった行より前には遡らない。
+func inheritStartedAtFromPrevious(evsArr HoujinExecutiveValueArray, start int) {
+	for i := start; i < len(evsArr); i++ {
+		if evsArr[i].StartedAt != "" {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if evsArr[j].Name != evsArr[i].Name || evsArr[j].Position != evsArr[i].Position {
+				continue
+			}
+			// 退任で終わった行より前には遡らない
+			if evsArr[j].ResignedReason != "" {
+				break
+			}
+			// 登記が抹消されて始まりの日付が無効になった行などは飛ばして、さらに前の行を見る
+			if evsArr[j].StartedAt != "" {
+				evsArr[i].StartedAt = evsArr[j].StartedAt
+				break
+			}
 		}
 	}
 }
