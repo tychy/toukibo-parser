@@ -308,8 +308,14 @@ func extractExecutiveInfo(part string) ([]HoujinExecutiveValue, []string) {
 // 右の列で行が分かれるので、記載全体をつなげて判定する。
 var restoredByErasurePattern = regexp.MustCompile(`抹消[　 ]*により回復`)
 
+// 定めの廃止に伴って役員の登記を書き直した記載（「令和６年３月２１日監査役会の定めの廃止により変更」）。
+// 社外監査役の注記が外れるなどの変更で、退任ではない。
+var changedByAbolitionPattern = regexp.MustCompile(`廃止[　 ]*により変更`)
+
 func extractDates(three []string) (registerAt string, resigned resignedAt, found bool) {
-	restored := restoredByErasurePattern.MatchString(strings.Join(three, ""))
+	joined := strings.Join(three, "")
+	restored := restoredByErasurePattern.MatchString(joined)
+	changedByAbolition := changedByAbolitionPattern.MatchString(joined)
 	for _, t := range three {
 		if at, _ := getRegisterAt(t); at != "" {
 			registerAt = at
@@ -320,6 +326,10 @@ func extractDates(three []string) (registerAt string, resigned resignedAt, found
 		}
 		// 「抹消により回復」は地位が戻った記載で、退任ではない
 		if restored && r.Reason == "抹消" {
+			continue
+		}
+		// 「定めの廃止により変更」は登記の書き直しで、退任ではない
+		if changedByAbolition && r.Reason == "廃止" {
 			continue
 		}
 		found = true
