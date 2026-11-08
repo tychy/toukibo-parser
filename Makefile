@@ -1,7 +1,7 @@
 BUCKET_NAME=toukibo-parser-samples
 SNAPSHOT_MANIFEST=testdata-snapshot.json
 DATA_DIR=testdata
-export NUM_SAMPLE=1788
+export NUM_SAMPLE=1790
 
 build:
 	mkdir -p bin

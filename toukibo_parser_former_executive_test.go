@@ -223,3 +223,36 @@ func TestParseExecutiveChangedByAbolition(t *testing.T) {
 		})
 	}
 }
+
+// 右の列で折り返され、日付と事由が別の行にある退任の実サンプル。
+func TestParseExecutiveHistoryWrappedResignation(t *testing.T) {
+	tests := []struct {
+		sample, name, position, resignedAt, reason string
+	}{
+		// 「令和７年３月３１日職務」「執行者辞任」
+		{"sample1789", "片岡宣秀", "職務執行者", "令和7年3月31日", "辞任"},
+		// 「令和６年６月３０日取締」「役が１名となったため抹消」
+		{"sample1790", "道面陽子", "代表取締役", "令和6年6月30日", "抹消"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.sample, func(t *testing.T) {
+			h, err := ParseByPDFPath("testdata/pdf/" + tt.sample + ".pdf")
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, v := range h.GetHoujinExecutiveHistory() {
+				if v.Name != tt.name || v.Position != tt.position || v.IsValid {
+					continue
+				}
+				if v.ResignedAt != tt.resignedAt || v.ResignedReason != tt.reason {
+					t.Fatalf("%s %s: got (%q, %q), want (%q, %q)", tt.name, tt.position, v.ResignedAt, v.ResignedReason, tt.resignedAt, tt.reason)
+				}
+				found = true
+			}
+			if !found {
+				t.Fatalf("%s %s の終了行が無い", tt.name, tt.position)
+			}
+		})
+	}
+}

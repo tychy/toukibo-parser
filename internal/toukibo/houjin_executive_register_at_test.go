@@ -720,3 +720,97 @@ func TestGetHoujinExecutiveValueChangedByAbolition(t *testing.T) {
 		})
 	})
 }
+
+// 右の列で折り返され、日付と事由が別の行にある退任の記載。
+func TestExtractDatesWrappedResignation(t *testing.T) {
+	tests := []struct {
+		name       string
+		three      []string
+		wantAt     string
+		wantReason string
+	}{
+		{
+			name:       "executor resigned",
+			three:      []string{"令和　７年　３月３１日職務", "執行者辞任　　　　　　　　", "", "令和　７年　４月　３日登記"},
+			wantAt:     "令和7年3月31日",
+			wantReason: "辞任",
+		},
+		{
+			name:       "representative erased when one director remains",
+			three:      []string{"令和　６年　６月３０日取締", "役が１名となったため抹消　", "", "令和　６年　７月２２日登記"},
+			wantAt:     "令和6年6月30日",
+			wantReason: "抹消",
+		},
+		{
+			name:       "three lines",
+			three:      []string{"令和　６年１０月３０日会社", "を代表しない取締役の不存在", "により抹消　　　　　　　　", "令和　６年１１月　５日登記"},
+			wantAt:     "令和6年10月30日",
+			wantReason: "抹消",
+		},
+		{
+			// 日付と事由の間に登記がある場合は、別の記載の日付なので採用しない
+			name:       "register between date and reason",
+			three:      []string{"令和　２年　３月２３日登記", "職務執行者辞任　　　　　　"},
+			wantAt:     "",
+			wantReason: "辞任",
+		},
+		{
+			// 下線（抹消）の印は文字列の塊の先頭に付く。日付の行だけに下線がある場合も採用しない
+			name:       "deleted date line",
+			three:      []string{deletedTextMarker + "令和　７年　３月３１日職務", "執行者辞任"},
+			wantAt:     "",
+			wantReason: "辞任",
+		},
+		{
+			// 事由の行の判定（getResignedAt）は従来のまま。補完で抹消済みの日付を付けないことだけを見る
+			name:       "deleted date and reason lines",
+			three:      []string{deletedTextMarker + "令和　７年　３月３１日職務", deletedTextMarker + "執行者辞任"},
+			wantAt:     "",
+			wantReason: "辞任",
+		},
+		{
+			// 日付と事由の間に別の出来事（回復・変更・就任）がある場合は、その出来事の日付なので採用しない
+			name:       "restoration between date and reason",
+			three:      []string{"令和　５年　９月１１日抹消", "により回復", "職務執行者辞任"},
+			wantAt:     "",
+			wantReason: "辞任",
+		},
+		{
+			name:       "change between date and reason",
+			three:      []string{"令和　６年　３月２１日監査役会", "の定めの廃止により変更", "職務執行者辞任"},
+			wantAt:     "",
+			wantReason: "辞任",
+		},
+		{
+			name:       "appointment between date and reason",
+			three:      []string{"令和　７年　３月３１日就任", "職務執行者辞任"},
+			wantAt:     "",
+			wantReason: "辞任",
+		},
+		{
+			// 1行に収まっていても、日付と事由の間に語句があれば同じように取る
+			name:       "executor resigned in one line",
+			three:      []string{"令和　７年　３月３１日職務執行者辞任", "令和　７年　４月　３日登記"},
+			wantAt:     "令和7年3月31日",
+			wantReason: "辞任",
+		},
+		{
+			// 1行に収まる記載は従来どおり
+			name:       "single line",
+			three:      []string{"令和　６年　６月２５日退任", "令和　６年　６月２７日登記"},
+			wantAt:     "令和6年6月25日",
+			wantReason: "退任",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, got, found := extractDates(tt.three)
+			if found != (tt.wantReason != "") {
+				t.Fatalf("extractDates(%q): found = %v", tt.three, found)
+			}
+			if got.At != tt.wantAt || got.Reason != tt.wantReason {
+				t.Fatalf("extractDates(%q) = (%q, %q), want (%q, %q)", tt.three, got.At, got.Reason, tt.wantAt, tt.wantReason)
+			}
+		})
+	}
+}
