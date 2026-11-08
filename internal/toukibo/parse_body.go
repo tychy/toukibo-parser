@@ -312,24 +312,50 @@ var restoredByErasurePattern = regexp.MustCompile(`抹消[　 ]*により回復`
 // 社外監査役の注記が外れるなどの変更で、退任ではない。
 var changedByAbolitionPattern = regexp.MustCompile(`廃止[　 ]*により変更`)
 
-// resignedDateBefore は、事由（辞任など）の直前にある日付を返す。
-// 日付と事由の間に「登記」や別の日付がある場合は、別の記載の日付なので採用しない。
-func resignedDateBefore(s, reason string) string {
+// 日付と事由の間に別の出来事を表す語があれば、その日付は別の記載のものとして扱う。
+var resignedDateBetweenRejectPattern = regexp.MustCompile(`登記|就任|重任|辞任|退任|死亡|抹消|廃止|解任|退社|移記|更正|資格|責任変更|回復|変更`)
+
+// resignedDateBefore は、右の列の各行 three をつないだ記載から、事由（辞任など）の直前にある日付を返す。
+// 次の場合は別の記載の日付なので採用しない。
+//   - 日付と事由の間に「登記」・別の出来事を表す語・別の日付・下線（抹消）の印がある
+//   - 日付の行に下線（抹消）の印がある（印は文字列の塊の先頭に付くので、日付の前にあることもある）
+func resignedDateBefore(three []string, reason string) string {
 	if reason == "" {
 		return ""
 	}
-	for _, m := range registerWarekiDateCapture.FindAllStringSubmatchIndex(s, -1) {
-		rest := s[m[1]:]
+	joined := strings.Join(three, "")
+	// 各行の終わりの位置（joined 上のバイト位置）
+	lineEnds := make([]int, len(three))
+	end := 0
+	for i, t := range three {
+		end += len(t)
+		lineEnds[i] = end
+	}
+	lineOf := func(pos int) string {
+		for i, e := range lineEnds {
+			if pos < e {
+				return three[i]
+			}
+		}
+		return ""
+	}
+
+	for _, m := range registerWarekiDateCapture.FindAllStringSubmatchIndex(joined, -1) {
+		rest := joined[m[1]:]
 		idx := strings.Index(rest, reason)
 		if idx < 0 {
 			continue
 		}
 		between := rest[:idx]
-		if strings.Contains(between, "登記") || strings.Contains(between, deletedTextMarker) ||
+		if strings.Contains(between, deletedTextMarker) ||
+			resignedDateBetweenRejectPattern.MatchString(between) ||
 			registerWarekiDateCapture.MatchString(between) {
 			continue
 		}
-		at := normalizeWarekiDate(s[m[2]:m[3]])
+		if strings.Contains(lineOf(m[2]), deletedTextMarker) {
+			continue
+		}
+		at := normalizeWarekiDate(joined[m[2]:m[3]])
 		if _, ok := warekiDateValue(at); ok {
 			return at
 		}
@@ -366,7 +392,7 @@ func extractDates(three []string) (registerAt string, resigned resignedAt, found
 	if found && resigned.At == "" {
 		// 「令和７年３月３１日職務」「執行者辞任」のように右の列で折り返され、
 		// 日付と事由が別の行にある場合は、記載をつないで事由の直前の日付を探す
-		resigned.At = resignedDateBefore(joined, resigned.Reason)
+		resigned.At = resignedDateBefore(three, resigned.Reason)
 	}
 	if registerAt == "" {
 		if at, _ := getRegisterAt(joined); at != "" {
