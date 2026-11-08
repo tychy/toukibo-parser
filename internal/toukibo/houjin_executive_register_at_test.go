@@ -1,6 +1,9 @@
 package toukibo
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestGetRegisterAt(t *testing.T) {
 	tests := []struct {
@@ -463,6 +466,41 @@ func TestGetHoujinExecutiveValueRegisterAtDateOnlyAppliesToPrevious(t *testing.T
 		assertExecutives(t, got, []wantExecutive{
 			{Name: "山田太郎", Position: "無限責任社員", RegisterAt: "令和4年7月11日", ResignedAt: "令和4年7月3日"},
 		})
+	})
+
+	t.Run("corrected resignation date applies to previous", func(t *testing.T) {
+		// 令和８年４月１日辞任で登記した後、退任日を３月３１日に更正した記載。
+		// 元の辞任は下線（抹消）付きで、更正の記載には「登記」が無い。
+		deleted := func(s string) string {
+			var b strings.Builder
+			for _, r := range s {
+				b.WriteString(deletedTextMarker)
+				b.WriteRune(r)
+			}
+			return b.String()
+		}
+		s := "┃　　　　　　　　│　取締役　　　　　山　田　太　郎　　　　　　　│令和　７年　５月２２日重任┃" +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨" +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　│令和　７年　６月　９日登記┃" +
+			revert4 +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　│" + deleted("令和　８年　４月　１日辞任") + "┃" +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨" +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　│令和　８年　４月　８日登記┃" +
+			revert4 +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　│令和　８年　３月３１日辞任┃" +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　├－－－－－－－－－－－－－┨" +
+			"┃　　　　　　　　│　　　　　　　　　　　　　　　　　　　　　　　│令和　８年　４月１７日更正┃"
+
+		got, err := GetHoujinExecutiveValue(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertExecutives(t, got, []wantExecutive{
+			{Name: "山田太郎", Position: "取締役", RegisterAt: "令和8年4月8日", ResignedAt: "令和8年3月31日"},
+		})
+		if got[0].ResignedReason != "辞任" {
+			t.Fatalf("ResignedReason = %q, want 辞任", got[0].ResignedReason)
+		}
 	})
 
 	t.Run("date-only row without register does not rewrite previous", func(t *testing.T) {

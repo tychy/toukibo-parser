@@ -356,6 +356,12 @@ func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 	}
 
 	if len(currentEvs) == 0 {
+		// 退任日を直す更正（「令和８年３月３１日辞任」「令和８年４月１７日更正」）は登記日を伴わない。
+		// 直された元の退任は下線で抹消されているので、更正後の退任を前の役員に付ける。
+		if registerAt == "" && found && strings.Contains(strings.Join(three, ""), "更正") {
+			setResigned(&evsArr[idx-1], resigned)
+			return
+		}
 		// 役員がないのに登記日がある場合は前の役員を対象にする
 		if registerAt != "" {
 			evsArr[idx-1].RegisterAt = registerAt
