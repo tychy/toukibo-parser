@@ -77,3 +77,64 @@ func TestParseExecutiveHistory(t *testing.T) {
 		t.Fatalf("current rows in history: want %d, got %d", len(execs), current)
 	}
 }
+
+// 退任日（または事由）を更正した役員。元の退任は下線で抹消され、更正の記載は「◯日更正」で終わり登記日を伴わない。
+// 更正後の退任が履歴に入り、現任には入らないこと。
+func TestParseExecutiveHistoryCorrectedResignation(t *testing.T) {
+	type ended struct{ name, position, resignedAt, reason string }
+	tests := []struct {
+		sample string
+		want   []ended
+	}{
+		// 令和8年4月1日辞任を令和8年3月31日辞任に更正
+		{"sample1781", []ended{{"後藤貞男", "取締役", "令和8年3月31日", "辞任"}}},
+		// 令和6年3月31日辞任を令和6年4月1日辞任に更正（取締役・代表取締役の両方）
+		{"sample1782", []ended{
+			{"近藤雄一郎", "取締役", "令和6年4月1日", "辞任"},
+			{"川嵜靖之", "取締役", "令和6年4月1日", "辞任"},
+			{"近藤雄一郎", "代表取締役", "令和6年4月1日", "辞任"},
+			{"川嵜靖之", "代表取締役", "令和6年4月1日", "辞任"},
+		}},
+		// 代表取締役の退任を辞任に更正（取締役としては辞任の登記が抹消されて現任）
+		{"sample1783", []ended{{"中島克宣", "代表取締役", "令和5年3月7日", "辞任"}}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.sample, func(t *testing.T) {
+			h, err := ParseByPDFPath("testdata/pdf/" + tt.sample + ".pdf")
+			if err != nil {
+				t.Fatal(err)
+			}
+			history := h.GetHoujinExecutiveHistory()
+			for _, w := range tt.want {
+				found := false
+				for _, v := range history {
+					if v.Name == w.name && v.Position == w.position {
+						if v.IsValid {
+							continue
+						}
+						if v.ResignedAt != w.resignedAt || v.ResignedReason != w.reason {
+							t.Fatalf("%s %s: got (%q, %q), want (%q, %q)", w.name, w.position, v.ResignedAt, v.ResignedReason, w.resignedAt, w.reason)
+						}
+						found = true
+					}
+				}
+				if !found {
+					t.Fatalf("%s %s が履歴に無い: %+v", w.name, w.position, history)
+				}
+			}
+
+			execs, err := h.GetHoujinExecutives()
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, w := range tt.want {
+				for _, v := range execs {
+					if v.Name == w.name && v.Position == w.position {
+						t.Fatalf("%s %s は現任に含まれない: %+v", w.name, w.position, v)
+					}
+				}
+			}
+		})
+	}
+}
