@@ -582,6 +582,8 @@ func TestGetResignedAtReason(t *testing.T) {
 		{name: "erase", input: "令和　１年　８月　１日抹消", wantAt: "令和1年8月1日", wantReason: "抹消"},
 		{name: "abolish", input: "令和　５年　３月　１日廃止", wantAt: "令和5年3月1日", wantReason: "廃止"},
 		{name: "leave", input: "平成３０年　４月　１日退社", wantAt: "平成30年4月1日", wantReason: "退社"},
+		{name: "withdraw", input: "令和　５年　３月３１日脱退", wantAt: "令和5年3月31日", wantReason: "脱退"},
+		{name: "merger", input: "令和　５年１０月　２日合併", wantAt: "令和5年10月2日", wantReason: "合併"},
 		{name: "responsibility change", input: "令和　３年　５月１９日責任変更", wantAt: "令和3年5月19日", wantReason: "責任変更"},
 		// 「職務執行者辞任」のように日付を伴わない記載は、理由だけ返して退任日は空にする
 		{name: "no date before reason", input: "職務執行者辞任", wantReason: "辞任"},

@@ -58,7 +58,7 @@ func getValue(s string) (string, error) {
 }
 
 var (
-	registerEventRejectPattern = regexp.MustCompile(`就任|重任|辞任|退任|死亡|抹消|廃止|解任|退社|移記|更正|資格|責任変更`)
+	registerEventRejectPattern = regexp.MustCompile(`就任|重任|辞任|退任|死亡|抹消|廃止|解任|退社|脱退|合併|移記|更正|資格|責任変更`)
 	registerWarekiDateCapture  = regexp.MustCompile(`((?:明治|大正|昭和|平成|令和)[　 ]*(?:元|[０-９0-9]+)年[　 ]*[０-９0-9]+月[　 ]*[０-９0-9]+日)`)
 )
 
@@ -91,9 +91,9 @@ type resignedAt struct {
 }
 
 var (
-	// 辞任/退任の他に死亡、抹消、廃止、解任、退社、責任変更も含める
+	// 辞任/退任の他に死亡、抹消、廃止、解任、退社、脱退（士業法人の社員）、合併（会計監査人の監査法人）、責任変更も含める
 	// 注：資格変更は新しい役職側に記録されるため、対象エントリ自体の退任とは扱わない
-	resignedSuffixes = []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "責任変更"}
+	resignedSuffixes = []string{"辞任", "退任", "死亡", "抹消", "廃止", "解任", "退社", "脱退", "合併", "責任変更"}
 	resignedPattern  = regexp.MustCompile(fmt.Sprintf(`([%s]+)　*(%s)`, ZenkakuStringPattern, strings.Join(resignedSuffixes, "|")))
 )
 
@@ -313,7 +313,7 @@ var restoredByErasurePattern = regexp.MustCompile(`抹消[　 ]*により回復`
 var changedByAbolitionPattern = regexp.MustCompile(`廃止[　 ]*により変更`)
 
 // 日付と事由の間に別の出来事を表す語があれば、その日付は別の記載のものとして扱う。
-var resignedDateBetweenRejectPattern = regexp.MustCompile(`登記|就任|重任|辞任|退任|死亡|抹消|廃止|解任|退社|移記|更正|資格|責任変更|回復|変更`)
+var resignedDateBetweenRejectPattern = regexp.MustCompile(`登記|就任|重任|辞任|退任|死亡|抹消|廃止|解任|退社|脱退|合併|移記|更正|資格|責任変更|回復|変更`)
 
 // resignedDateBefore は、右の列の各行 three をつないだ記載から、事由（辞任など）の直前にある日付を返す。
 // 次の場合は別の記載の日付なので採用しない。
