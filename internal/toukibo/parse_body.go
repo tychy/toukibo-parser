@@ -312,6 +312,31 @@ var restoredByErasurePattern = regexp.MustCompile(`抹消[　 ]*により回復`
 // 社外監査役の注記が外れるなどの変更で、退任ではない。
 var changedByAbolitionPattern = regexp.MustCompile(`廃止[　 ]*により変更`)
 
+// resignedDateBefore は、事由（辞任など）の直前にある日付を返す。
+// 日付と事由の間に「登記」や別の日付がある場合は、別の記載の日付なので採用しない。
+func resignedDateBefore(s, reason string) string {
+	if reason == "" {
+		return ""
+	}
+	for _, m := range registerWarekiDateCapture.FindAllStringSubmatchIndex(s, -1) {
+		rest := s[m[1]:]
+		idx := strings.Index(rest, reason)
+		if idx < 0 {
+			continue
+		}
+		between := rest[:idx]
+		if strings.Contains(between, "登記") || strings.Contains(between, deletedTextMarker) ||
+			registerWarekiDateCapture.MatchString(between) {
+			continue
+		}
+		at := normalizeWarekiDate(s[m[2]:m[3]])
+		if _, ok := warekiDateValue(at); ok {
+			return at
+		}
+	}
+	return ""
+}
+
 func extractDates(three []string) (registerAt string, resigned resignedAt, found bool) {
 	joined := strings.Join(three, "")
 	restored := restoredByErasurePattern.MatchString(joined)
@@ -338,8 +363,13 @@ func extractDates(three []string) (registerAt string, resigned resignedAt, found
 			resigned = r
 		}
 	}
+	if found && resigned.At == "" {
+		// 「令和７年３月３１日職務」「執行者辞任」のように右の列で折り返され、
+		// 日付と事由が別の行にある場合は、記載をつないで事由の直前の日付を探す
+		resigned.At = resignedDateBefore(joined, resigned.Reason)
+	}
 	if registerAt == "" {
-		if at, _ := getRegisterAt(strings.Join(three, "")); at != "" {
+		if at, _ := getRegisterAt(joined); at != "" {
 			registerAt = at
 		}
 	}
