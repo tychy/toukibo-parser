@@ -304,13 +304,22 @@ func extractExecutiveInfo(part string) ([]HoujinExecutiveValue, []string) {
 	return evs, three
 }
 
+// 登記の抹消により役員の地位が戻った記載（「令和５年９月１１日抹消」「により回復」）。
+// 右の列で行が分かれるので、記載全体をつなげて判定する。
+var restoredByErasurePattern = regexp.MustCompile(`抹消[　 ]*により回復`)
+
 func extractDates(three []string) (registerAt string, resigned resignedAt, found bool) {
+	restored := restoredByErasurePattern.MatchString(strings.Join(three, ""))
 	for _, t := range three {
 		if at, _ := getRegisterAt(t); at != "" {
 			registerAt = at
 		}
 		r, ok := getResignedAt(t)
 		if !ok {
+			continue
+		}
+		// 「抹消により回復」は地位が戻った記載で、退任ではない
+		if restored && r.Reason == "抹消" {
 			continue
 		}
 		found = true
