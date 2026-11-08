@@ -138,3 +138,45 @@ func TestParseExecutiveHistoryCorrectedResignation(t *testing.T) {
 		})
 	}
 }
+
+// 登記が抹消され「◯日抹消により回復」で役員の地位が戻った実サンプル。
+// 回復した行を「抹消」による退任として扱わないこと。
+func TestParseExecutiveRestoredByErasure(t *testing.T) {
+	tests := []struct {
+		sample, name, position string
+	}{
+		// 辞任の登記が抹消され、回復が最後の記載（現任）
+		{"sample1784", "工藤一進", "取締役"},
+		// 辞任の登記が抹消されて回復し、その後に重任
+		{"sample1785", "伊東政子", "監査役"},
+		// 住所移転の登記が抹消されて回復（現任）
+		{"sample1786", "中井富士男", "取締役"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.sample, func(t *testing.T) {
+			h, err := ParseByPDFPath("testdata/pdf/" + tt.sample + ".pdf")
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, v := range h.GetHoujinExecutiveHistory() {
+				if v.Name == tt.name && v.Position == tt.position && !v.IsValid {
+					t.Fatalf("%s %s に終了行がある: %+v", tt.name, tt.position, v)
+				}
+			}
+			execs, err := h.GetHoujinExecutives()
+			if err != nil {
+				t.Fatal(err)
+			}
+			current := 0
+			for _, v := range execs {
+				if v.Name == tt.name && v.Position == tt.position {
+					current++
+				}
+			}
+			if current != 1 {
+				t.Fatalf("%s %s の現任行: want 1, got %d (%+v)", tt.name, tt.position, current, execs)
+			}
+		})
+	}
+}
