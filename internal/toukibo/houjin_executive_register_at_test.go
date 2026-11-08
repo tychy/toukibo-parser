@@ -599,3 +599,74 @@ func TestGetResignedAtReason(t *testing.T) {
 		})
 	}
 }
+
+// 辞任の登記が抹消され、「◯日抹消により回復」で役員の地位が戻った記載。
+// 回復は退任ではないので、回復の行に退任を付けない。
+func TestGetHoujinExecutiveValueRestoredByErasure(t *testing.T) {
+	const (
+		blank = "　　　　　　　　　　　　　　　　　　　　　　　"
+		sep   = "┃　　　　　　　　│" + blank + "├－－－－－－－－－－－－－┨"
+	)
+	row := func(mid, right string) string {
+		return "┃　　　　　　　　│" + mid + "│" + right + "┃"
+	}
+	deleted := func(s string) string {
+		var b strings.Builder
+		for _, r := range s {
+			b.WriteString(deletedTextMarker)
+			b.WriteRune(r)
+		}
+		return b.String()
+	}
+	name := "　取締役　　　　　山　田　太　郎　　　　　　　"
+	erased := row(name, "令和　１年１１月３０日就任") + sep +
+		row(blank, "令和　１年１２月２３日登記") + revert4 +
+		row(blank, deleted("令和　５年　５月　１日辞任")) + sep +
+		row(blank, "令和　５年　８月１７日登記") + revert4 +
+		row(blank, "辞任の登記　　　　　　　　") + sep +
+		row(blank, "令和　５年　９月１１日抹消") + revert4 +
+		row(name, "　　　　　　　　　　　　　") + sep +
+		row(blank, "令和　５年　９月１１日抹消") +
+		row(blank, "により回復　　　　　　　　")
+
+	t.Run("restored row is current", func(t *testing.T) {
+		got, err := GetHoujinExecutiveValue(erased)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 2 {
+			t.Fatalf("executive count: want 2, got %d (%+v)", len(got), got)
+		}
+		last := got[len(got)-1]
+		if !last.IsValid || last.ResignedAt != "" || last.ResignedReason != "" {
+			t.Fatalf("restored row must be current without resignation: %+v", last)
+		}
+		if got[0].IsValid || got[0].ResignedReason != "" {
+			t.Fatalf("erased row must be replaced without resignation: %+v", got[0])
+		}
+	})
+
+	t.Run("reappointment after restoration replaces restored row", func(t *testing.T) {
+		s := erased + revert4 +
+			row(name, "令和　７年　５月１５日重任") + sep +
+			row(blank, "令和　７年　５月２６日登記")
+		got, err := GetHoujinExecutiveValue(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 3 {
+			t.Fatalf("executive count: want 3, got %d (%+v)", len(got), got)
+		}
+		for i, v := range got {
+			if v.ResignedAt != "" || v.ResignedReason != "" {
+				t.Fatalf("executive[%d] must not have resignation: %+v", i, v)
+			}
+			if v.IsValid != (i == 2) {
+				t.Fatalf("executive[%d].IsValid = %v", i, v.IsValid)
+			}
+		}
+		if got[2].RegisterAt != "令和7年5月26日" {
+			t.Fatalf("RegisterAt = %q, want 令和7年5月26日", got[2].RegisterAt)
+		}
+	})
+}
