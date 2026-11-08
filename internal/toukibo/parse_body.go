@@ -335,6 +335,24 @@ var startedDateBetweenRejectPattern = regexp.MustCompile(`登記|辞任|退任|�
 // 就任・重任などの登記そのものを抹消した記載（「重任の登記」「令和７年８月６日抹消」）。
 var startRegistrationErasedPattern = regexp.MustCompile(`(就任|重任|加入|入社|資格変更|代表権付与|業務執行権付与|選任)の登記[　 ]*(?:明治|大正|昭和|平成|令和)[^登]*抹消`)
 
+// 「令和３年５月１７日登記」のように登記日だけの行。
+var registerOnlyLinePattern = regexp.MustCompile(`^[　 ]*(?:明治|大正|昭和|平成|令和)[　 ]*(?:元|[０-９0-9]+)年[　 ]*[０-９0-9]+月[　 ]*[０-９0-9]+日登記[　 ]*$`)
+
+// hasDeletedEvent は、記載の右の列に、登記日だけの行以外で下線（抹消）の印が付いた行があるかを返す。
+// 取り消された辞任などの出来事の記載を見分けるため、登記日の行だけに付いた下線は数えない。
+func hasDeletedEvent(three []string) bool {
+	for _, t := range three {
+		if !strings.Contains(t, deletedTextMarker) {
+			continue
+		}
+		if registerOnlyLinePattern.MatchString(strings.ReplaceAll(t, deletedTextMarker, "")) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 // startedDateOf は、記載の右の列から任期の始まり（就任・重任など）の日付を返す。無ければ空。
 // 重任などで置き換わった行は下線付きだが、その行の始まりの日付は有効なので下線の印は取り除いて読む。
 func startedDateOf(three []string) string {
@@ -474,8 +492,8 @@ func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 		}
 		// 役員がないのに登記日がある場合は前の役員を対象にする
 		if registerAt != "" {
-			// 下線（抹消）付きの記載（取り消された辞任など）の登記日は、その欄の登記日として使わない
-			if !strings.Contains(strings.Join(three, ""), deletedTextMarker) {
+			// 下線（抹消）付きの出来事の記載（取り消された辞任など）の登記日は、その欄の登記日として使わない
+			if !hasDeletedEvent(three) {
 				evsArr[idx-1].RegisterAt = registerAt
 			}
 			if found {
@@ -488,6 +506,12 @@ func handlePreviousExecutiveRelation(evsArr HoujinExecutiveValueArray, idx int,
 	}
 
 	if len(currentEvs) == 1 {
+		// 氏の変更で書き直した行は氏名が変わるので、氏名での引き継ぎの代わりにここで始まりの日付を引き継ぐ
+		prev := evsArr[idx-1]
+		if currentEvs[0].StartedAt == "" && prev.Position == currentEvs[0].Position && prev.ResignedReason == "" &&
+			isNameChange(strings.Join(three, ""), prev.Name) {
+			currentEvs[0].StartedAt = prev.StartedAt
+		}
 		handleSingleExecutive(evsArr, idx, currentEvs[0], three)
 		// 責任変更の場合、同一人物の過去の役職エントリも無効化
 		joinedThree := strings.Join(three, "")
