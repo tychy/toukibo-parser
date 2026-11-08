@@ -11,13 +11,14 @@ type HoujinExecutiveValue struct {
 	Address        string
 	IsValid        bool
 	RegisterAt     string `yaml:"RegisterAt"`
+	StartedAt      string
 	ResignedAt     string
 	ResignedReason string
 }
 
 func (h *HoujinExecutiveValue) String() string {
-	return fmt.Sprintf("name: %s, position: %s, address: %s, isValid: %v, registerAt: %s, resignedAt: %s, resignedReason: %s",
-		h.Name, h.Position, h.Address, h.IsValid, h.RegisterAt, h.ResignedAt, h.ResignedReason)
+	return fmt.Sprintf("name: %s, position: %s, address: %s, isValid: %v, registerAt: %s, startedAt: %s, resignedAt: %s, resignedReason: %s",
+		h.Name, h.Position, h.Address, h.IsValid, h.RegisterAt, h.StartedAt, h.ResignedAt, h.ResignedReason)
 }
 
 type HoujinExecutiveValueArray []HoujinExecutiveValue
@@ -30,6 +31,7 @@ func (hva HoujinExecutiveValueArray) String() string {
 		b.WriteString("    RegisterAt: " + hv.RegisterAt + "\n")
 		if DebugOn {
 			b.WriteString("    IsValid: " + fmt.Sprintf("%v", hv.IsValid) + "\n")
+			b.WriteString("    StartedAt: " + hv.StartedAt + "\n")
 			b.WriteString("    ResignedAt: " + hv.ResignedAt + "\n")
 			b.WriteString("    ResignedReason: " + hv.ResignedReason + "\n")
 		}

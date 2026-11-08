@@ -256,3 +256,44 @@ func TestParseExecutiveHistoryWrappedResignation(t *testing.T) {
 		})
 	}
 }
+
+// 役員の任期の始まり（StartedAt）と登記日（RegisterAt）。
+func TestParseExecutiveStartedAt(t *testing.T) {
+	tests := []struct {
+		sample, name, position         string
+		current                        bool
+		startedAt, registerAt, endedAt string
+	}{
+		// 重任の任期を辞任で終えた行。下線付き（取り消し）の辞任の登記日では上書きしない
+		{"sample1781", "後藤貞男", "取締役", false, "令和7年5月22日", "令和7年6月9日", "令和8年3月31日"},
+		// 辞任の登記が抹消され回復した現任の行。就任から引き継ぐ
+		{"sample1784", "工藤一進", "取締役", true, "令和1年11月30日", "令和1年12月23日", ""},
+		// 重任の登記が抹消され回復したあとに退任。抹消された重任（平成27年）ではなく、その前の重任から引き継ぐ
+		{"sample1791", "横田国寿", "取締役", false, "平成17年6月25日", "令和7年8月6日", "平成19年6月25日"},
+		{"sample1791", "横田国寿", "取締役", true, "令和7年8月6日", "令和7年8月6日", ""},
+		// 「令和６年１１月１４日職務」「執行者就任」と折り返された就任
+		{"sample1789", "平岡佳明", "職務執行者", true, "令和6年11月14日", "令和6年11月14日", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.sample+"/"+tt.name, func(t *testing.T) {
+			h, err := ParseByPDFPath("testdata/pdf/" + tt.sample + ".pdf")
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, v := range h.GetHoujinExecutiveHistory() {
+				if v.Name != tt.name || v.Position != tt.position || v.IsValid != tt.current {
+					continue
+				}
+				found = true
+				if v.StartedAt != tt.startedAt || v.RegisterAt != tt.registerAt || v.ResignedAt != tt.endedAt {
+					t.Fatalf("got (started %q, registered %q, ended %q), want (%q, %q, %q)",
+						v.StartedAt, v.RegisterAt, v.ResignedAt, tt.startedAt, tt.registerAt, tt.endedAt)
+				}
+			}
+			if !found {
+				t.Fatalf("%s %s (current=%v) が履歴に無い", tt.name, tt.position, tt.current)
+			}
+		})
+	}
+}

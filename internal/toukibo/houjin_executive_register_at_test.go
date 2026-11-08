@@ -496,7 +496,8 @@ func TestGetHoujinExecutiveValueRegisterAtDateOnlyAppliesToPrevious(t *testing.T
 			t.Fatal(err)
 		}
 		assertExecutives(t, got, []wantExecutive{
-			{Name: "山田太郎", Position: "取締役", RegisterAt: "令和8年4月8日", ResignedAt: "令和8年3月31日"},
+			// 下線付き（取り消し）の辞任の登記日（令和８年４月８日）では上書きしない
+			{Name: "山田太郎", Position: "取締役", RegisterAt: "令和7年6月9日", ResignedAt: "令和8年3月31日"},
 		})
 		if got[0].ResignedReason != "辞任" {
 			t.Fatalf("ResignedReason = %q, want 辞任", got[0].ResignedReason)
@@ -813,4 +814,147 @@ func TestExtractDatesWrappedResignation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStartedDateOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		three []string
+		want  string
+	}{
+		{"appointed", []string{"令和　５年　６月１９日就任", "令和　５年　６月１９日登記"}, "令和5年6月19日"},
+		{"reappointed", []string{"令和　５年　６月２７日重任", "令和　５年　６月３０日登記"}, "令和5年6月27日"},
+		{"executor wrapped", []string{"令和　６年１１月１４日職務", "執行者就任", "令和　６年１１月１４日登記"}, "令和6年11月14日"},
+		{"joined", []string{"令和　６年　４月１６日加入", "令和　６年　４月１７日登記"}, "令和6年4月16日"},
+		{"qualification change", []string{"令和　３年　４月　１日資格", "変更", "令和　３年　４月　５日登記"}, "令和3年4月1日"},
+		{"representative right granted", []string{"令和　３年　７月　１日代表", "権付与", "令和　３年　７月　１日登記"}, "令和3年7月1日"},
+		{"entered", []string{"令和　２年　４月　１日入社", "令和　２年　４月　３日登記"}, "令和2年4月1日"},
+		{"appointed by court", []string{"令和　２年　４月　１日東京地方", "裁判所の選任", "令和　２年　４月　３日登記"}, "令和2年4月1日"},
+		// 重任などで置き換わった行は下線付きだが、始まりの日付は読む
+		{"superseded row", []string{deletedTextMarker + "令和　３年　５月１６日重任", "令和　３年　５月１７日登記"}, "令和3年5月16日"},
+		// 住所移転・氏の変更などの行には始まりの日付が無い（前の行から引き継ぐ）
+		{"address change", []string{"令和　６年１０月２３日住所移転", "令和　６年１１月　８日登記"}, ""},
+		{"no date", []string{"", ""}, ""},
+		// 日付と始まりの語の間に別の出来事がある日付は採用しない
+		{"other event between", []string{"令和　６年　３月２１日住所移転", "就任"}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := startedDateOf(tt.three); got != tt.want {
+				t.Fatalf("startedDateOf(%q) = %q, want %q", tt.three, got, tt.want)
+			}
+		})
+	}
+}
+
+// 始まりの日付の引き継ぎ: 住所移転の行は前の行から引き継ぎ、重任の登記が抹消されて回復した行は
+// 抹消された重任ではなく、その前の行から引き継ぐ。
+func TestGetHoujinExecutiveValueStartedAt(t *testing.T) {
+	const (
+		blank = "　　　　　　　　　　　　　　　　　　　　　　　"
+		sep   = "┃　　　　　　　　│" + blank + "├－－－－－－－－－－－－－┨"
+	)
+	row := func(mid, right string) string {
+		return "┃　　　　　　　　│" + mid + "│" + right + "┃"
+	}
+	name := "　取締役　　　　　山　田　太　郎　　　　　　　"
+
+	t.Run("address change inherits", func(t *testing.T) {
+		s := row(name, "令和　２年　６月２５日就任") + sep +
+			row(blank, "令和　２年　６月３０日登記") + revert4 +
+			row(name, "令和　６年１０月２３日住所") +
+			row(blank, "移転　　　　　　　　　　　") + sep +
+			row(blank, "令和　６年１１月　８日登記")
+		got, err := GetHoujinExecutiveValue(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		last := got[len(got)-1]
+		if !last.IsValid || last.StartedAt != "令和2年6月25日" || last.RegisterAt != "令和6年11月8日" {
+			t.Fatalf("got %+v", last)
+		}
+	})
+
+	t.Run("name change inherits", func(t *testing.T) {
+		s := row("　取締役　　　　　山　田　花　子　　　　　　　", "令和　２年　６月２５日就任") + sep +
+			row(blank, "令和　２年　６月３０日登記") + revert4 +
+			row("　取締役　　　　　佐　藤　花　子　　　　　　　", "令和　６年　１月１０日山田") +
+			row(blank, "花子の氏変更　　　　　　　") + sep +
+			row(blank, "令和　６年　１月２０日登記")
+		got, err := GetHoujinExecutiveValue(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		last := got[len(got)-1]
+		if !last.IsValid || last.Name != "佐藤花子" || last.StartedAt != "令和2年6月25日" {
+			t.Fatalf("got %+v", last)
+		}
+	})
+
+	t.Run("restored after erased reappointment", func(t *testing.T) {
+		s := row(name, "平成１７年　６月２５日重任") + sep +
+			row(blank, "平成１７年　８月１０日登記") + revert4 +
+			row(name, "平成２７年　７月２１日重任") + sep +
+			row(blank, "平成２７年　７月２４日登記") + revert4 +
+			row(blank, "重任の登記　　　　　　　　") + sep +
+			row(blank, "令和　７年　８月　６日抹消") + revert4 +
+			row(name, "　　　　　　　　　　　　　") + sep +
+			row(blank, "令和　７年　８月　６日抹消") +
+			row(blank, "により回復　　　　　　　　") + revert4 +
+			row(blank, "平成１９年　６月２５日退任") + sep +
+			row(blank, "令和　７年　８月　６日登記")
+		got, err := GetHoujinExecutiveValue(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		last := got[len(got)-1]
+		if last.IsValid || last.ResignedAt != "平成19年6月25日" || last.StartedAt != "平成17年6月25日" {
+			t.Fatalf("got %+v", last)
+		}
+	})
+}
+
+func TestHasDeletedEvent(t *testing.T) {
+	tests := []struct {
+		name  string
+		three []string
+		want  bool
+	}{
+		{"deleted resignation", []string{deletedTextMarker + "令和　５年　５月　１日辞任", "令和　５年　８月１７日登記"}, true},
+		// 登記日の行だけに下線が付いた記載は、取り消された出来事として扱わない
+		{"deleted register only", []string{deletedTextMarker + "令和　３年　５月１７日登記"}, false},
+		{"no deletion", []string{"令和　６年　６月２５日退任", "令和　６年　６月２７日登記"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasDeletedEvent(tt.three); got != tt.want {
+				t.Fatalf("hasDeletedEvent(%q) = %v, want %v", tt.three, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInheritStartedAtFromPrevious(t *testing.T) {
+	t.Run("does not go back across a resignation", func(t *testing.T) {
+		evs := HoujinExecutiveValueArray{
+			{Name: "山田太郎", Position: "取締役", StartedAt: "令和2年6月25日"},
+			{Name: "山田太郎", Position: "取締役", ResignedAt: "令和4年6月25日", ResignedReason: "辞任"},
+			{Name: "山田太郎", Position: "取締役"},
+		}
+		inheritStartedAtFromPrevious(evs, 2)
+		if evs[2].StartedAt != "" {
+			t.Fatalf("StartedAt = %q, want empty", evs[2].StartedAt)
+		}
+	})
+	t.Run("skips rows without started date", func(t *testing.T) {
+		evs := HoujinExecutiveValueArray{
+			{Name: "山田太郎", Position: "取締役", StartedAt: "平成17年6月25日"},
+			{Name: "山田太郎", Position: "取締役"},
+			{Name: "山田太郎", Position: "取締役"},
+		}
+		inheritStartedAtFromPrevious(evs, 2)
+		if evs[2].StartedAt != "平成17年6月25日" {
+			t.Fatalf("StartedAt = %q, want 平成17年6月25日", evs[2].StartedAt)
+		}
+	})
 }
