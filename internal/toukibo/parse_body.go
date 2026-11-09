@@ -797,6 +797,43 @@ func (h *HoujinBody) ConsumeHoujinToukiRecord(s string) bool {
 	return strings.Contains(s, "登記記録に関する")
 }
 
+// 閉鎖された登記簿では、閉鎖の年月日が登記記録に関する事項の欄に「令和８年８月３日閉鎖」と入る。
+var toukiClosedAtPattern = regexp.MustCompile(fmt.Sprintf(`(%s)[　 ]*閉鎖`, registryWarekiDatePattern))
+
+var toukiRecordDatePattern = regexp.MustCompile(registryWarekiDatePattern)
+
+// 登記記録に関する事項を読み、閉鎖の年月日と、解散の記載から解散日を取る。
+// 閉鎖された登記簿には「解　散」の欄が無く、「…サンプル株式会社に合併し解散」のように
+// 解散が登記記録の欄にだけ書かれるため、ここで拾う。
+func (h *HoujinBody) ConsumeHoujinClosedRecord(s string) {
+	var merged string
+	for _, p := range ExtractLines(s) {
+		_, b, _ := splitThree(p)
+		merged += b
+	}
+
+	if m := toukiClosedAtPattern.FindAllStringSubmatch(merged, -1); len(m) > 0 {
+		h.HoujinClosedAt = normalizeWarekiDate(m[len(m)-1][1])
+	}
+	if h.HoujinDissolvedAt != "" {
+		return
+	}
+	// 解散の記載の直前にある日付を解散日とする。記載の後ろにある登記日・閉鎖日を拾わない。
+	for _, keyword := range []string{"により解散", "合併し解散"} {
+		idx := strings.LastIndex(merged, keyword)
+		if idx < 0 {
+			continue
+		}
+		dates := toukiRecordDatePattern.FindAllStringIndex(merged, -1)
+		for i := len(dates) - 1; i >= 0; i-- {
+			if dates[i][1] <= idx {
+				h.HoujinDissolvedAt = normalizeWarekiDate(merged[dates[i][0]:dates[i][1]])
+				return
+			}
+		}
+	}
+}
+
 func (h *HoujinBody) ConsumeHoujinExecutive(s string) bool {
 	return strings.Contains(s, "役員に関する事項") || strings.Contains(s, "社員に関する事項")
 }
@@ -1036,6 +1073,7 @@ func (h *HoujinBody) ParseBodyMain(s string) error {
 		if !h.processHoujinToukiRecord(s) {
 			return fmt.Errorf("failed to process houjin touki record")
 		}
+		h.ConsumeHoujinClosedRecord(s)
 		return nil
 	}
 	if h.ConsumeHoujinExecutive(s) {

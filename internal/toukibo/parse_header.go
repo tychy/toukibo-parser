@@ -7,10 +7,15 @@ import (
 	"time"
 )
 
+// 閉鎖された登記簿のPDFは、作成日時の行と本店・商号の間にこの告知が入る。
+// 本店・商号は位置で決めているため、取り除いてから読む。
+const closedToukiboNotice = "これは閉鎖された登記簿です。"
+
 type HoujinHeader struct {
 	CreatedAt      time.Time
 	CompanyName    string
 	CompanyAddress string
+	IsClosed       bool
 }
 
 func (h *HoujinHeader) String() string {
@@ -46,12 +51,25 @@ func ReadCreatedAt(s string) (time.Time, error) {
 }
 
 func ParseHeader(s string) (*HoujinHeader, error) {
-	arr := strings.Split(s, " 　")
+	isClosed := strings.Contains(s, closedToukiboNotice)
+	arr := make([]string, 0, 4)
+	for _, v := range strings.Split(s, " 　") {
+		if strings.Contains(v, closedToukiboNotice) {
+			v = strings.TrimSpace(strings.ReplaceAll(v, closedToukiboNotice, ""))
+			if v == "" {
+				continue
+			}
+		}
+		arr = append(arr, v)
+	}
+	if len(arr) < 4 {
+		return nil, fmt.Errorf("header has too few parts: %q", s)
+	}
 	createdAt, err := ReadCreatedAt(arr[0])
 	if err != nil {
 		return nil, err
 	}
 	companyAddress := trimLeadingTrailingSpace(arr[2])
 	companyName := trimLeadingTrailingSpace(arr[3])
-	return &HoujinHeader{CreatedAt: createdAt, CompanyAddress: companyAddress, CompanyName: companyName}, nil
+	return &HoujinHeader{CreatedAt: createdAt, CompanyAddress: companyAddress, CompanyName: companyName, IsClosed: isClosed}, nil
 }
