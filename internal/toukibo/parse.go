@@ -121,6 +121,16 @@ func (h *Houjin) GetHoujinContinuedAt() string {
 	return h.body.HoujinContinuedAt
 }
 
+// GetHoujinClosedAt は登記記録が閉鎖された年月日を返す。閉鎖された登記簿でなければ空文字列。
+func (h *Houjin) GetHoujinClosedAt() string {
+	return h.body.HoujinClosedAt
+}
+
+// IsClosedToukibo は閉鎖された登記簿（閉鎖会社等）の PDF かどうかを返す。
+func (h *Houjin) IsClosedToukibo() bool {
+	return h.header.IsClosed
+}
+
 func (h *Houjin) GetHoujinCapital() int {
 	for _, v := range h.body.HoujinCapital {
 		if v.IsValid {

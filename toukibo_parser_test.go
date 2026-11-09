@@ -25,7 +25,9 @@ type TestData struct {
 	HoujinCreatedAt           string                         `yaml:"HoujinCreatedAt"`
 	HoujinBankruptedAt        string                         `yaml:"HoujinBankruptedAt"`
 	HoujinDissolvedAt         string                         `yaml:"HoujinDissolvedAt"`
+	HoujinClosedAt            string                         `yaml:"HoujinClosedAt"`
 	HoujinContinuedAt         string                         `yaml:"HoujinContinuedAt"`
+	IsClosed                  bool                           `yaml:"IsClosed"`
 }
 
 func BenchmarkMain(b *testing.B) {
@@ -217,6 +219,12 @@ func TestToukiboParser(t *testing.T) {
 			}
 			if h.GetHoujinContinuedAt() != td.HoujinContinuedAt {
 				t.Fatalf("continued_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinContinuedAt, h.GetHoujinContinuedAt())
+			}
+			if h.GetHoujinClosedAt() != td.HoujinClosedAt {
+				t.Fatalf("closed_at is not match,\nwant : %s,\ngot  : %s,", td.HoujinClosedAt, h.GetHoujinClosedAt())
+			}
+			if h.IsClosedToukibo() != td.IsClosed {
+				t.Fatalf("is_closed is not match,\nwant : %v,\ngot  : %v,", td.IsClosed, h.IsClosedToukibo())
 			}
 		})
 	}
